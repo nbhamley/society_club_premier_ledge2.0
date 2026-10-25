@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Links between the society admin pages. active: console | approvals | vendors | bills | import | backup | billing | contacts -->
+<nav class="tabs admin-links" th:fragment="adminNav(active)" aria-label="Admin sections">
+    <a th:href="@{/society-admin}" th:classappend="${active == 'console'} ? 'active'">Console</a>
+    <a th:href="@{/society-admin/approvals}" th:classappend="${active == 'approvals'} ? 'active'">Approvals
+        <span class="badge" th:if="${nav != null and nav.pendingVotes > 0}" th:text="${nav.pendingVotes}">2</span></a>
+    <a th:href="@{/society-admin/vendors}" th:classappend="${active == 'vendors'} ? 'active'">Vendors</a>
+    <a th:href="@{/society-admin/bills}" th:classappend="${active == 'bills'} ? 'active'">Bills</a>
+    <a th:href="@{/society-admin/import}" th:classappend="${active == 'import'} ? 'active'">Import</a>
+    <a th:href="@{/society-admin/backup}" th:classappend="${active == 'backup'} ? 'active'">Backup</a>
+    <a th:href="@{/society-admin/billing}" th:classappend="${active == 'billing'} ? 'active'">Billing</a>
+    <a th:href="@{/society-admin/contacts}" th:classappend="${active == 'contacts'} ? 'active'">Contacts</a>
+</nav>
+
+<!-- Links between the platform admin pages. active: overview | societies | subscriptions | events | tournaments | audit -->
+<nav class="tabs admin-links" th:fragment="platformNav(active)" aria-label="Platform sections">
+    <a th:href="@{/platform-admin}" th:classappend="${active == 'overview'} ? 'active'">Overview</a>
+    <a th:href="@{/platform-admin/societies}" th:classappend="${active == 'societies'} ? 'active'">Societies</a>
+    <a th:href="@{/platform-admin/subscriptions}" th:classappend="${active == 'subscriptions'} ? 'active'">Subscriptions</a>
+    <a th:href="@{/platform-admin/events}" th:classappend="${active == 'events'} ? 'active'">Events</a>
+    <a th:if="${@featureFlags.crossSocietyEnabled}" th:href="@{/platform-admin/tournaments}"
+       th:classappend="${active == 'tournaments'} ? 'active'">Tournaments</a>
+    <a th:href="@{/platform-admin/audit}" th:classappend="${active == 'audit'} ? 'active'">Audit log</a>
+</nav>
+
+<!-- Rupee amount, or a dash for null. Used as: <span th:replace="~{fragments/admin-layout :: money(${x})}"></span> -->
+<span th:fragment="money(v)"
+      th:text="${v != null} ? '&#8377;' + ${#numbers.formatDecimal(v, 1, 'COMMA', 0, 'POINT')} : '-'">&#8377;0</span>
+
+</body>
+</html>

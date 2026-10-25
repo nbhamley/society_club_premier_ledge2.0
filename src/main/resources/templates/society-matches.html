@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Matches &ndash; ' + ${society.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1 th:text="${society.name}">Society</h1>
+    <nav th:replace="~{fragments/layout :: societyNav(${society.name}, ${society.slug}, 'matches')}"></nav>
+
+    <h2>Fixtures and results</h2>
+    <div class="grid grid-2">
+        <div th:each="m : ${matches}" th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div>
+    </div>
+    <p class="muted" th:if="${#lists.isEmpty(matches)}">No matches have been scheduled yet.</p>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

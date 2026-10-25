@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Platform events')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Platform events</h1>
+    <nav th:replace="~{fragments/admin-layout :: platformNav('events')}"></nav>
+    <p class="muted">Published events appear on the platform home page (scope Platform) or on one society's page (scope Society).
+        Thumbnails and links can point to YouTube or social posts.</p>
+
+    <details class="card"><summary>New event</summary>
+        <form class="form" th:action="@{/platform-admin/events}" method="post">
+            <div class="form-grid">
+                <label>Title <input type="text" name="title" maxlength="160" required></label>
+                <label>When <input type="datetime-local" name="eventDate"></label>
+                <label>Type <select name="type">
+                    <option th:each="t : ${opts.eventTypes}" th:value="${t}" th:text="${t.label}">Match</option></select></label>
+                <label>Scope <select name="scope">
+                    <option th:each="s : ${opts.eventScopes}" th:value="${s}" th:text="${s.label}">Platform</option></select></label>
+                <label>Society (for society scope) <select name="societyId"><option value="">-</option>
+                    <option th:each="s : ${societyOptions}" th:value="${s.id}" th:text="${s.name}">Society</option></select></label>
+                <label>Thumbnail URL <input type="text" name="thumbnailUrl" maxlength="300" placeholder="https://... or /images/..."></label>
+                <label>Link (YouTube, social post) <input type="url" name="externalLink" maxlength="300" placeholder="https://..."></label>
+                <label class="check"><input type="checkbox" name="published" value="true"> Published</label>
+                <label class="span-2">Description <textarea name="description" rows="2" maxlength="1000"></textarea></label>
+            </div>
+            <button class="btn" type="submit">Create event</button></form></details>
+
+    <div class="table-wrap"><table class="table">
+        <thead><tr><th>Event</th><th>When</th><th>Type</th><th>Scope</th><th>Published</th><th>Actions</th></tr></thead>
+        <tbody>
+        <tr th:each="e : ${events}">
+            <td><strong th:text="${e.title}">Event</strong><br><small class="muted" th:text="${e.description}">About</small></td>
+            <td th:text="${#temporals.format(e.eventDate, 'd MMM yyyy, HH:mm')}">date</td>
+            <td th:text="${e.typeLabel}">Match</td>
+            <td th:text="${e.scopeLabel} + (${e.societyName} != null ? ': ' + ${e.societyName} : '')">Platform</td>
+            <td th:text="${e.published} ? 'Yes' : 'No'">Yes</td>
+            <td class="actions">
+                <details><summary>Edit</summary>
+                    <form class="form" th:action="@{/platform-admin/events/{id}(id=${e.id})}" method="post">
+                        <div class="form-grid">
+                            <label>Title <input type="text" name="title" th:value="${e.title}" maxlength="160" required></label>
+                            <label>When <input type="datetime-local" name="eventDate"
+                                               th:value="${e.eventDate != null} ? ${#temporals.format(e.eventDate, 'yyyy-MM-dd')} + 'T' + ${#temporals.format(e.eventDate, 'HH:mm')}"></label>
+                            <label>Type <select name="type">
+                                <option th:each="t : ${opts.eventTypes}" th:value="${t}" th:text="${t.label}" th:selected="${t == e.type}">Match</option></select></label>
+                            <label>Scope <select name="scope">
+                                <option th:each="s : ${opts.eventScopes}" th:value="${s}" th:text="${s.label}" th:selected="${s == e.scope}">Platform</option></select></label>
+                            <label>Society <select name="societyId"><option value="">-</option>
+                                <option th:each="s : ${societyOptions}" th:value="${s.id}" th:text="${s.name}" th:selected="${s.id == e.societyId}">Society</option></select></label>
+                            <label>Thumbnail URL <input type="text" name="thumbnailUrl" th:value="${e.thumbnailUrl}" maxlength="300"></label>
+                            <label>Link <input type="url" name="externalLink" th:value="${e.externalLink}" maxlength="300"></label>
+                            <label class="check"><input type="checkbox" name="published" value="true" th:checked="${e.published}"> Published</label>
+                            <label class="span-2">Description <textarea name="description" rows="2" maxlength="1000" th:text="${e.description}"></textarea></label>
+                        </div>
+                        <button class="btn btn-small" type="submit">Save</button></form></details>
+                <form class="inline" th:action="@{/platform-admin/events/{id}/delete(id=${e.id})}" method="post" data-confirm="Delete this event?">
+                    <button class="btn btn-small btn-danger" type="submit">Delete</button></form>
+            </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(events)}"><td colspan="6" class="muted">No events yet.</td></tr>
+        </tbody></table></div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

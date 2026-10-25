@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Subscriptions')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Subscriptions</h1>
+    <nav th:replace="~{fragments/admin-layout :: platformNav('subscriptions')}"></nav>
+    <p class="muted">Setting a subscription to Past due or Cancelled starts the 30-day read-only clock. Setting it back to Active or Trial clears it.
+        Normal billing runs automatically every night.</p>
+
+    <div class="table-wrap"><table class="table">
+        <thead><tr><th>Society</th><th>Plan</th><th>Status</th><th>Monthly</th><th>Started</th><th>Next billing</th><th>Last payment</th><th>Overdue since</th><th>Override</th></tr></thead>
+        <tbody>
+        <tr th:each="s : ${subscriptions}">
+            <td><strong th:text="${s.societyName}">Society</strong></td>
+            <td th:text="${s.planLabel}">Standard</td>
+            <td><span class="badge" th:text="${s.statusLabel}">Active</span> <small class="muted" th:unless="${s.autoRenew}">no auto-renew</small></td>
+            <td th:text="${s.currency} + ' ' + ${#numbers.formatDecimal(s.monthlyCost, 1, 'COMMA', 0, 'POINT')}">INR 999</td>
+            <td th:text="${#temporals.format(s.startedAt, 'd MMM yyyy')}">date</td>
+            <td th:text="${#temporals.format(s.nextBillingAt, 'd MMM yyyy')}">date</td>
+            <td th:text="${#temporals.format(s.lastPaymentAt, 'd MMM yyyy')}">date</td>
+            <td th:text="${#temporals.format(s.pastDueSince, 'd MMM yyyy')}">date</td>
+            <td><form class="inline" th:action="@{/platform-admin/subscriptions/{id}/status(id=${s.id})}" method="post"
+                      data-confirm="Override this subscription's status?">
+                <select name="status" aria-label="Subscription status">
+                    <option th:each="st : ${opts.subscriptionStatuses}" th:value="${st}" th:text="${st.label}" th:selected="${st == s.status}">Active</option></select>
+                <button class="btn btn-small" type="submit">Set</button></form></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(subscriptions)}"><td colspan="9" class="muted">No subscriptions yet.</td></tr>
+        </tbody></table></div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

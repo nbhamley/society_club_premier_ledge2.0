@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Seasons &ndash; ' + ${society.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1 th:text="${society.name}">Society</h1>
+    <nav th:replace="~{fragments/layout :: societyNav(${society.name}, ${society.slug}, 'seasons')}"></nav>
+
+    <h2>Seasons</h2>
+    <div class="grid grid-3">
+        <article class="card" th:each="s : ${seasons}">
+            <h3><a th:href="@{/society/{slug}/seasons/{id}(slug=${society.slug},id=${s.id})}" th:text="${s.name}">Season</a></h3>
+            <p><span class="badge" th:text="${s.statusLabel}">Ongoing</span>
+                <span class="muted" th:if="${s.year}" th:text="${s.year}">2026</span></p>
+            <p class="muted" th:if="${s.startDate}"
+               th:text="${#temporals.format(s.startDate, 'd MMM yyyy')} + (${s.endDate} != null ? ' &ndash; ' + ${#temporals.format(s.endDate, 'd MMM yyyy')} : '')">Dates</p>
+            <p th:if="${s.description}" th:text="${s.description}">About</p>
+            <a class="btn btn-small" th:if="${s.registrationOpen}"
+               th:href="@{/society/{slug}/register(slug=${society.slug},season=${s.id})}">Register</a>
+        </article>
+    </div>
+    <p class="muted" th:if="${#lists.isEmpty(seasons)}">No seasons yet.</p>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

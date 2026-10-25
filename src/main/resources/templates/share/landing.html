@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: base}"></th:block>
+    <title th:text="${landing.title} + ' | SCPL'">Share | SCPL</title>
+    <meta property="og:type" content="website">
+    <meta property="og:title" th:content="${landing.title}">
+    <meta property="og:description" th:if="${landing.caption}" th:content="${landing.caption}">
+    <meta property="og:url" th:if="${landing.shareUrl}" th:content="${landing.shareUrl}">
+    <!-- Link previews need an absolute image URL; relative placeholders are skipped. -->
+    <meta property="og:image" th:if="${landing.imageUrl != null and landing.imageUrl.startsWith('http')}" th:content="${landing.imageUrl}">
+    <meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container narrow">
+    <article class="card share-landing">
+        <img class="thumb" th:if="${landing.imageUrl}" th:src="@{${landing.imageUrl}}" th:alt="${landing.title}">
+        <p class="muted" th:text="${landing.societyName}">Society</p>
+        <h1 th:text="${landing.title}">Title</h1>
+        <p th:if="${landing.caption}" th:text="${landing.caption}">Caption</p>
+        <a class="btn" th:href="@{${landing.targetPath}}">View on SCPL</a>
+    </article>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

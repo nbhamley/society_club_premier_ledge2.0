@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Share row (§13). Use at most once per page:
+    <div th:replace="~{fragments/share-row :: shareRow('player', ${player.id})}"></div>
+  type: player | team | match | award | season.
+  admin.js flow: GET /share/{type}/{id}/preview?platform=X fills the confirmation text, then POST /share/{type}/{id}
+  stores the share. WhatsApp, X and LinkedIn open the returned outboundUrl; Instagram and Facebook show the
+  modal actions (copy caption, download image, open app); Copy link copies shareUrl.
+  The server refuses non-owners with 403, and the dialog shows the error text.
+-->
+<section class="share-row" th:fragment="shareRow(type, id)" th:attr="data-share-type=${type},data-share-id=${id}"
+         aria-label="Share">
+    <span class="share-label">Share:</span>
+    <button type="button" class="btn btn-small btn-secondary" data-platform="INSTAGRAM">Instagram</button>
+    <button type="button" class="btn btn-small btn-secondary" data-platform="FACEBOOK">Facebook</button>
+    <button type="button" class="btn btn-small btn-secondary" data-platform="WHATSAPP">WhatsApp</button>
+    <button type="button" class="btn btn-small btn-secondary" data-platform="TWITTER_X">X</button>
+    <button type="button" class="btn btn-small btn-secondary" data-platform="LINKEDIN">LinkedIn</button>
+    <button type="button" class="btn btn-small btn-secondary" data-platform="COPY_LINK">Copy link</button>
+
+    <div class="share-dialog card" data-role="share-dialog" role="dialog" aria-modal="true"
+         aria-labelledby="share-title" hidden>
+        <h3 id="share-title">Share publicly?</h3>
+        <p data-role="share-confirm"></p>
+        <label>Caption
+            <textarea data-role="share-caption" rows="3" maxlength="500"></textarea>
+        </label>
+        <p class="field-errors" role="alert" data-role="share-error" hidden></p>
+        <div class="dialog-actions" data-role="share-modal-actions" hidden>
+            <button type="button" class="btn btn-small" data-role="share-copy-caption">Copy caption</button>
+            <button type="button" class="btn btn-small" data-role="share-download-image">Download image</button>
+            <a class="btn btn-small" data-role="share-open-app" target="_blank" rel="noopener noreferrer" href="#">Open app</a>
+        </div>
+        <div class="dialog-actions">
+            <button type="button" class="btn" data-role="share-continue">Continue</button>
+            <button type="button" class="btn btn-secondary" data-role="share-cancel">Cancel</button>
+        </div>
+    </div>
+</section>
+</body>
+</html>

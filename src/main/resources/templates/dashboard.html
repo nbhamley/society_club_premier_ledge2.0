@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1 th:text="${dash.societyName}">Society</h1>
+    <p class="muted"><span class="badge" th:text="${dash.societyStatus}">Active</span>
+        <span th:if="${dash.seasonName}" th:text="'Current season: ' + ${dash.seasonName}">Season</span>
+        <a th:href="@{/society/{s}(s=${dash.societySlug})}">Public page</a></p>
+
+    <div class="flash flash-err" role="alert" th:if="${dash.readOnly}">
+        This society is read-only because its subscription needs attention. You can still view everything.
+        <a th:if="${dash.admin}" th:href="@{/society-admin/billing}">Open billing</a></div>
+    <div class="flash" th:if="${dash.trialDaysLeft != null}">
+        Free trial: <strong th:text="${dash.trialDaysLeft}">14</strong> day(s) left.
+        <a th:if="${dash.admin}" th:href="@{/society-admin/billing}">Choose a plan</a></div>
+
+    <section class="grid grid-4 kpis" th:if="${dash.admin}">
+        <a class="card stat" th:href="@{/society-admin#teams}"><span class="stat-num" th:text="${dash.teams}">0</span><span>Teams</span></a>
+        <a class="card stat" th:href="@{/society-admin#players}"><span class="stat-num" th:text="${dash.players}">0</span><span>Players</span></a>
+        <a class="card stat" th:href="@{/society-admin#matches}"><span class="stat-num" th:text="${dash.matches}">0</span><span>Matches</span></a>
+        <a class="card stat" th:href="@{/society-admin/approvals}"><span class="stat-num" th:text="${dash.pendingApprovals}">0</span>
+            <span>Pending approvals<small th:if="${dash.awaitingMyVote > 0}" th:text="' (' + ${dash.awaitingMyVote} + ' need your vote)'"></small></span></a>
+        <a class="card stat" th:href="@{/society-admin/billing}"><span class="stat-num" th:text="${dash.planLabel != null} ? ${dash.planLabel} : '-'">Plan</span>
+            <span th:text="${dash.subscriptionStatus != null} ? ${dash.subscriptionStatus} : 'No subscription'">Status</span></a>
+        <div class="card stat"><span class="stat-num" th:text="${dash.nextFixture != null} ? ${dash.nextFixture} : 'None scheduled'">Next fixture</span>
+            <span th:text="${dash.nextFixtureDate != null} ? ${#temporals.format(dash.nextFixtureDate, 'EEE d MMM, HH:mm')} : 'Next fixture'">date</span></div>
+    </section>
+    <p th:if="${dash.admin}"><a class="btn" th:href="@{/society-admin}">Open the admin console</a></p>
+
+    <section class="section" th:unless="${dash.admin}">
+        <h2>Your league</h2>
+        <p><a class="btn" th:href="@{/me/team}">My team</a> <a class="btn btn-secondary" th:href="@{/me/player}">My player profile</a>
+            <a class="btn btn-secondary" th:href="@{/me/auction}">Auction</a></p>
+        <p th:if="${dash.nextFixture}" th:text="'Next fixture: ' + ${dash.nextFixture}">Next fixture</p>
+    </section>
+
+    <section class="section card" th:if="${dash.ownProfile != null}">
+        <h2>My player profile</h2>
+        <p><strong th:text="${dash.ownProfile.name}">Name</strong>
+            <span class="badge" th:if="${dash.ownProfile.role}" th:text="${dash.ownProfile.role.label}">Role</span>
+            <span th:if="${dash.ownProfile.teamName}" th:text="${dash.ownProfile.teamName}">Team</span></p>
+        <p th:text="${dash.ownProfile.matchesPlayed} + ' matches, ' + ${dash.ownProfile.runs} + ' runs, ' + ${dash.ownProfile.wickets} + ' wickets'">Stats</p>
+        <p class="muted">Your contact details are visible only to you and your society's admins.</p>
+        <a th:href="@{/me/player}">View my full profile</a>
+    </section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

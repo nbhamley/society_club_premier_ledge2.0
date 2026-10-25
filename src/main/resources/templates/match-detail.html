@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${detail.match.teamA} + ' vs ' + ${detail.match.teamB})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <p class="muted"><a th:href="@{/society/{s}(s=${detail.societySlug})}" th:text="${detail.societyName}">Society</a>
+        <span th:text="'/ ' + ${detail.seasonName}">/ Season</span></p>
+    <h1 th:text="${detail.match.teamA} + ' vs ' + ${detail.match.teamB}">A vs B</h1>
+
+    <div th:replace="~{fragments/layout :: matchCard(${detail.match}, false)}"></div>
+
+    <dl class="facts">
+        <dt>Status</dt><dd th:text="${detail.match.statusLabel}">Completed</dd>
+        <dt th:if="${detail.match.stageLabel}">Stage</dt><dd th:if="${detail.match.stageLabel}" th:text="${detail.match.stageLabel}">League</dd>
+        <dt th:if="${detail.match.date}">When</dt><dd th:if="${detail.match.date}" th:text="${#temporals.format(detail.match.date, 'EEEE d MMMM yyyy, HH:mm')}">date</dd>
+        <dt th:if="${detail.match.venue}">Where</dt><dd th:if="${detail.match.venue}" th:text="${detail.match.venue}">Ground</dd>
+        <dt th:if="${detail.match.winnerName}">Winner</dt><dd th:if="${detail.match.winnerName}" th:text="${detail.match.winnerName}">Team</dd>
+    </dl>
+    <div th:if="${canShare}" th:replace="~{fragments/share-row :: shareRow('match', ${matchId})}"></div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

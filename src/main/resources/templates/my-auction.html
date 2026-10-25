@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Auction')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<!-- data-autorefresh: admin.js reloads the page every N seconds while a lot is live, unless a field is being edited. -->
+<main id="main" class="container narrow" th:attr="data-autorefresh=${lot != null and !lot.closed} ? '10' : null">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Player auction</h1>
+
+    <p class="card" th:if="${team == null}">You are not on a team, so there is nothing to bid on.</p>
+
+    <th:block th:if="${team != null}">
+        <p>Bidding for <strong th:text="${team.teamName}">Team</strong>
+            <span class="muted" th:text="'(' + ${team.seasonName} + ')'">(Season)</span></p>
+
+        <p class="card" th:if="${lot == null}">No lot is live right now. This page refreshes when the admins start the next player.</p>
+
+        <section class="card lot" th:if="${lot != null}">
+            <h2 th:text="${lot.playerName}">Player</h2>
+            <p><span class="badge" th:text="${lot.statusLabel}">Live</span> <span class="badge" th:text="${lot.modeLabel}">Online bidding</span></p>
+            <dl class="facts">
+                <dt>Base price</dt><dd th:text="'&#8377;' + ${#numbers.formatDecimal(lot.basePrice, 1, 'COMMA', 0, 'POINT')}">1,000</dd>
+                <dt>Current bid</dt>
+                <dd th:text="${lot.currentBid > 0} ? '&#8377;' + ${#numbers.formatDecimal(lot.currentBid, 1, 'COMMA', 0, 'POINT')} + ' (' + ${lot.currentBidTeam} + ')' : 'No bids yet'">No bids yet</dd>
+            </dl>
+
+            <form th:if="${team.viewerIsCaptain and lot.mode.name() == 'ONLINE' and !lot.closed}"
+                  class="form" th:action="@{/me/auction/lots/{id}/bid(id=${lot.id})}" method="post">
+                <input type="hidden" name="teamId" th:value="${team.teamId}">
+                <label>Your bid (&#8377;)
+                    <input type="number" name="amount" th:min="${lot.currentBid > 0} ? ${lot.currentBid + 1} : ${lot.basePrice}"
+                           step="1" inputmode="numeric" required></label>
+                <button class="btn" type="submit">Place bid</button>
+                <p class="muted">A bid must beat the current bid and fit within your team's remaining budget.</p>
+            </form>
+            <p class="muted" th:if="${!team.viewerIsCaptain}">Only the team captain can bid.</p>
+            <p class="muted" th:if="${team.viewerIsCaptain and lot.mode.name() != 'ONLINE'}">This lot is being sold in the hall. The admins will record the result.</p>
+        </section>
+    </th:block>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

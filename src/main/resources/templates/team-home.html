@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My team')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>My team</h1>
+
+    <div class="card" th:if="${team == null}">
+        <p>You are not on a team yet. Teams are formed at the player auction.</p>
+        <p th:if="${societySlug != null}"><a th:href="@{/society/{s}/seasons(s=${societySlug})}">See the seasons</a></p>
+    </div>
+
+    <th:block th:if="${team != null}">
+        <section class="society-hero">
+            <img class="logo logo-large" th:if="${team.logoUrl}" th:src="@{${team.logoUrl}}" alt="">
+            <div>
+                <h2><span class="dot" th:style="${team.color != null} ? 'background:' + ${team.color}"></span>
+                    <span th:text="${team.teamName}">Team</span></h2>
+                <p class="muted" th:text="${team.seasonName}">Season</p>
+                <p th:if="${team.captainName}">Captain: <strong th:text="${team.captainName}">Captain</strong></p>
+                <p th:if="${team.viewerIsCaptain}"><span class="chip">You are the captain</span>
+                    <a class="btn btn-small" th:href="@{/me/auction}">Go to the auction</a></p>
+            </div>
+        </section>
+        <div th:if="${canShare}" th:replace="~{fragments/share-row :: shareRow('team', ${team.teamId})}"></div>
+
+        <section class="section"><h2>Squad</h2>
+            <div class="table-wrap"><table class="table">
+                <thead><tr><th>Player</th><th>Role</th><th>Matches</th><th>Runs</th><th>Wickets</th></tr></thead>
+                <tbody>
+                <tr th:each="p : ${team.roster}">
+                    <td th:text="${p.name}">Player</td>
+                    <td th:text="${p.role != null} ? ${p.role.label} : '-'">Role</td>
+                    <td th:text="${p.matchesPlayed}">0</td><td th:text="${p.runs}">0</td><td th:text="${p.wickets}">0</td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(team.roster)}"><td colspan="5" class="muted">No players yet.</td></tr>
+                </tbody></table></div>
+            <p class="muted">Teammates' contact details are not shown.</p></section>
+
+        <section class="section"><h2>Points table</h2>
+            <div th:replace="~{fragments/layout :: standings(${team.standings})}"></div></section>
+
+        <section class="section"><h2>Our matches</h2>
+            <div class="grid grid-2"><div th:each="m : ${team.matches}" th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></div>
+            <p class="muted" th:if="${#lists.isEmpty(team.matches)}">No matches scheduled yet.</p></section>
+    </th:block>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

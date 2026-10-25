@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Subscribe your society')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Subscribe your society</h1>
+    <p class="lead">Start a 14-day free trial. A platform admin reviews new societies before they appear publicly.</p>
+    <div th:replace="~{fragments/layout :: pricing(${plans})}"></div>
+
+    <form class="card form" th:action="@{/subscribe}" th:object="${form}" method="post" novalidate>
+        <h2>Your society</h2>
+        <ul th:replace="~{fragments/layout :: formErrors}"></ul>
+        <div class="form-grid">
+            <label>Society name <input type="text" th:field="*{name}" maxlength="120" required></label>
+            <label>City <input type="text" th:field="*{city}" maxlength="80"></label>
+            <label>Contact email <input type="email" th:field="*{contactEmail}" maxlength="200"></label>
+            <label>Contact phone <input type="tel" th:field="*{contactPhone}" maxlength="30"></label>
+            <label class="span-2">About <textarea th:field="*{description}" rows="3" maxlength="1000"></textarea></label>
+            <label>Plan to start after the trial
+                <select th:field="*{plan}">
+                    <option value="">Decide later</option>
+                    <option th:each="p : ${plans}" th:if="${p.plan.name() != 'FREE_TRIAL'}" th:value="${p.plan}" th:text="${p.label}">Basic</option>
+                </select></label>
+        </div>
+
+        <h2>Founding admins</h2>
+        <p class="muted">At least three admins are required so important decisions always have enough voters.
+            Each gets their own login.</p>
+        <fieldset class="admin-block" th:each="a, st : *{admins}">
+            <legend th:text="'Admin ' + ${st.count}">Admin 1</legend>
+            <div class="form-grid">
+                <label>Username <input type="text" th:field="*{admins[__${st.index}__].username}" maxlength="40" autocomplete="off" required></label>
+                <label>Full name <input type="text" th:field="*{admins[__${st.index}__].fullName}" maxlength="120"></label>
+                <label>Email <input type="email" th:field="*{admins[__${st.index}__].email}" maxlength="200" autocomplete="off" required></label>
+                <label>Phone / WhatsApp <input type="tel" th:field="*{admins[__${st.index}__].phone}" maxlength="30"></label>
+                <label>Password (10+ characters)
+                    <input type="password" th:field="*{admins[__${st.index}__].password}" minlength="10" maxlength="72" autocomplete="new-password" required></label>
+            </div>
+        </fieldset>
+
+        <div class="hp" aria-hidden="true"><label>Company website <input type="text" th:field="*{companyUrl}" tabindex="-1" autocomplete="off"></label></div>
+        <button class="btn btn-large" type="submit">Start free trial</button>
+    </form>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

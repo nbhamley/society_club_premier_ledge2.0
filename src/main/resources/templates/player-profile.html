@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My player profile')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container narrow">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>My player profile</h1>
+
+    <div class="card" th:if="${player == null}">
+        <p>You are not registered as a player yet.</p>
+        <p th:if="${societySlug != null}"><a class="btn" th:href="@{/society/{s}/register(s=${societySlug})}">Register for a season</a></p>
+    </div>
+
+    <th:block th:if="${player != null}">
+        <section class="player-hero">
+            <img class="avatar" th:if="${player.photoUrl}" th:src="@{${player.photoUrl}}" th:alt="${player.name}">
+            <div>
+                <h2 th:text="${player.name}">Name</h2>
+                <p><span class="badge" th:if="${player.role}" th:text="${player.role.label}">Role</span>
+                    <span th:if="${player.teamName}" th:text="${player.teamName}">Team</span>
+                    <span class="muted" th:if="${player.jerseyNumber}" th:text="'#' + ${player.jerseyNumber}">#7</span></p>
+                <p class="muted"><span th:if="${player.battingStyle}" th:text="${player.battingStyle.label}">Right-hand bat</span>
+                    <span th:if="${player.bowlingStyle != null and player.bowlingStyle.name() != 'NONE'}" th:text="'&middot; ' + ${player.bowlingStyle.label}">Bowling</span></p>
+            </div>
+        </section>
+
+        <section class="grid grid-3 stats">
+            <div class="card stat"><span class="stat-num" th:text="${player.matchesPlayed}">0</span><span>Matches</span></div>
+            <div class="card stat"><span class="stat-num" th:text="${player.runs}">0</span><span>Runs</span></div>
+            <div class="card stat"><span class="stat-num" th:text="${player.wickets}">0</span><span>Wickets</span></div>
+        </section>
+
+        <section class="card" th:if="${player.piiVisible}">
+            <h2>My details</h2>
+            <p class="muted">Only you and your society's admins can see these. They never appear on public pages.</p>
+            <dl class="facts">
+                <dt>Email</dt><dd th:text="${player.email != null} ? ${player.email} : '-'">email</dd>
+                <dt>Phone</dt><dd th:text="${player.phone != null} ? ${player.phone} : '-'">phone</dd>
+                <dt>Date of birth</dt><dd th:text="${player.dateOfBirth != null} ? ${#temporals.format(player.dateOfBirth, 'd MMM yyyy')} : '-'">dob</dd>
+                <dt>Flat</dt><dd th:text="${player.flatNumber != null} ? ${player.flatNumber} : '-'">flat</dd>
+                <dt>Address</dt><dd th:text="${player.address != null} ? ${player.address} : '-'">address</dd>
+            </dl>
+        </section>
+
+        <p><a th:if="${societySlug != null}" th:href="@{/society/{s}/player/{id}(s=${societySlug},id=${player.id})}">See my public page</a>
+            <span class="muted">(statistics only; your details are not shown there)</span></p>
+        <div th:if="${canShare}" th:replace="~{fragments/share-row :: shareRow('player', ${player.id})}"></div>
+    </th:block>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

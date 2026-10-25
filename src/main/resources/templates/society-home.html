@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${home.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <section class="society-hero">
+        <img class="logo logo-large" th:if="${home.logoUrl}" th:src="@{${home.logoUrl}}" alt="">
+        <div>
+            <h1 th:text="${home.name}">Society</h1>
+            <p class="muted" th:if="${home.city}" th:text="${home.city}">City</p>
+            <p th:if="${home.description}" th:text="${home.description}">About</p>
+            <p th:if="${home.season != null and home.season.registrationOpen}">
+                <a class="btn" th:href="@{/society/{s}/register(s=${home.slug},season=${home.season.id})}">Register for [[${home.season.name}]]</a></p>
+        </div>
+    </section>
+    <nav th:replace="~{fragments/layout :: societyNav(${home.name}, ${home.slug}, 'home')}"></nav>
+
+    <section class="section" th:if="${home.season != null}">
+        <h2>Points table &ndash; <span th:text="${home.season.name}">Season</span></h2>
+        <p class="muted"><span th:text="${home.season.statusLabel}">Ongoing</span> &middot;
+            <a th:href="@{/society/{s}/seasons/{id}(s=${home.slug},id=${home.season.id})}">Season details</a></p>
+        <div th:replace="~{fragments/layout :: standings(${home.standings})}"></div>
+    </section>
+    <p class="muted" th:if="${home.season == null}">No season has been set up yet.</p>
+
+    <section class="section" th:unless="${#lists.isEmpty(home.upcoming)}">
+        <h2>Upcoming fixtures</h2>
+        <div class="grid grid-2"><div th:each="m : ${home.upcoming}" th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></div>
+    </section>
+
+    <section class="section" th:unless="${#lists.isEmpty(home.recentResults)}">
+        <h2>Recent results</h2>
+        <div class="grid grid-2"><div th:each="m : ${home.recentResults}" th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></div>
+    </section>
+
+    <section class="section" th:unless="${#lists.isEmpty(home.teams)}">
+        <h2>Teams</h2>
+        <div class="grid grid-4">
+            <article class="card team-card" th:each="t : ${home.teams}">
+                <p><span class="dot" th:style="${t.color != null} ? 'background:' + ${t.color}"></span>
+                    <strong th:text="${t.name}">Team</strong> <small class="muted" th:text="${t.shortName}">T</small></p>
+                <p class="muted" th:if="${t.captainName}" th:text="'Captain: ' + ${t.captainName}">Captain</p>
+            </article>
+        </div>
+        <p><a th:href="@{/society/{s}/players(s=${home.slug})}">See all players</a></p>
+    </section>
+
+    <section class="section" th:unless="${#lists.isEmpty(home.awards)}">
+        <h2>Awards</h2>
+        <div class="grid grid-3">
+            <article class="card" th:each="a : ${home.awards}">
+                <h3 th:text="${a.title}">Award</h3>
+                <p><strong th:text="${a.winnerName}">Winner</strong></p>
+                <p class="muted" th:if="${a.seasonName}" th:text="${a.seasonName}">Season</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="section" th:unless="${#lists.isEmpty(home.sponsors)}">
+        <h2>Sponsors</h2>
+        <ul class="sponsor-strip plain">
+            <li th:each="s : ${home.sponsors}">
+                <img class="logo" th:if="${s.logoUrl}" th:src="@{${s.logoUrl}}" th:alt="${s.name}" loading="lazy">
+                <a th:if="${s.website}" th:href="@{${s.website}}" target="_blank" rel="noopener noreferrer" th:text="${s.name}">Sponsor</a>
+                <span th:unless="${s.website}" th:text="${s.name}">Sponsor</span>
+                <small class="muted" th:if="${s.tierLabel}" th:text="${s.tierLabel}">Gold</small>
+            </li>
+        </ul>
+    </section>
+
+    <section class="section" th:unless="${#lists.isEmpty(home.gallery)}">
+        <h2>Gallery</h2>
+        <div class="grid grid-4">
+            <figure class="card" th:each="g : ${home.gallery}">
+                <img th:src="@{${g.imageUrl}}" th:alt="${g.title != null} ? ${g.title} : 'Society photo'" loading="lazy">
+                <figcaption th:if="${g.caption}" th:text="${g.caption}">Caption</figcaption>
+            </figure>
+        </div>
+    </section>
+
+    <section class="section" th:unless="${#lists.isEmpty(home.events)}">
+        <h2>Coming up</h2>
+        <ul class="plain">
+            <li th:each="e : ${home.events}">
+                <strong th:text="${e.title}">Event</strong>
+                <span class="muted" th:text="${#temporals.format(e.eventDate, 'EEE d MMM, HH:mm')}">date</span>
+                <a th:if="${e.externalLink}" th:href="@{${e.externalLink}}" target="_blank" rel="noopener noreferrer">More</a>
+            </li>
+        </ul>
+    </section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

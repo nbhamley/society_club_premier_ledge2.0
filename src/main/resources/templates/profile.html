@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My profile')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container narrow">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>My profile</h1>
+    <dl class="facts">
+        <dt>Username</dt><dd th:text="${profile.username}">user</dd>
+        <dt>Role</dt><dd th:text="${profile.roleLabel}">Role</dd>
+        <dt th:if="${profile.societyName}">Society</dt><dd th:if="${profile.societyName}" th:text="${profile.societyName}">Society</dd>
+        <dt th:if="${profile.playingAs}">Playing as</dt><dd th:if="${profile.playingAs}" th:text="${profile.playingAs}">Player</dd>
+    </dl>
+    <p th:if="${profile.canRegisterAsPlayer and profile.societySlug != null}">
+        You are not registered as a player yet.
+        <a th:href="@{/society/{s}/register(s=${profile.societySlug})}">Register as a player</a> (it needs the other admins' approval).</p>
+
+    <form class="card form" th:action="@{/profile}" th:object="${profileForm}" method="post" novalidate>
+        <h2>Details</h2>
+        <ul th:replace="~{fragments/layout :: formErrors}"></ul>
+        <label>Full name <input type="text" th:field="*{fullName}" maxlength="120"></label>
+        <label>Email <input type="email" th:field="*{email}" maxlength="200" required></label>
+        <label>Phone <input type="tel" th:field="*{phone}" maxlength="30"></label>
+        <button class="btn" type="submit">Save details</button>
+    </form>
+
+    <form class="card form" th:action="@{/profile/password}" th:object="${passwordForm}" method="post" novalidate>
+        <h2>Change password</h2>
+        <p class="muted">Use at least 10 characters. Do not reuse your username or your current password.</p>
+        <label>Current password <input type="password" th:field="*{currentPassword}" autocomplete="current-password" required></label>
+        <label>New password <input type="password" th:field="*{newPassword}" autocomplete="new-password" minlength="10" maxlength="72" required></label>
+        <label>Repeat new password <input type="password" th:field="*{confirmPassword}" autocomplete="new-password" minlength="10" maxlength="72" required></label>
+        <button class="btn" type="submit">Change password</button>
+    </form>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

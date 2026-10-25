@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="Tournament event">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d47a1"/><stop offset="1" stop-color="#00838f"/></linearGradient></defs>
+    <rect width="640" height="360" fill="url(#g)"/>
+    <circle cx="320" cy="150" r="64" fill="#c62828"/>
+    <path d="M272 112c20 24 20 52 0 76M368 112c-20 24-20 52 0 76" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-dasharray="8 8"/>
+    <text x="320" y="290" text-anchor="middle" font-family="sans-serif" font-size="34" font-weight="700" fill="#fff">SCPL Tournament</text>
+</svg>

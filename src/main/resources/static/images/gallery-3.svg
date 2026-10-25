@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" width="400" height="260" role="img" aria-label="Team photos">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ef6c00"/><stop offset="1" stop-color="#c62828"/></linearGradient></defs>
+    <rect width="400" height="260" fill="url(#g)"/>
+    <g fill="#fff" opacity=".9">
+        <circle cx="110" cy="100" r="16"/><rect x="92" y="120" width="36" height="52" rx="12"/>
+        <circle cx="170" cy="92" r="16"/><rect x="152" y="112" width="36" height="60" rx="12"/>
+        <circle cx="230" cy="92" r="16"/><rect x="212" y="112" width="36" height="60" rx="12"/>
+        <circle cx="290" cy="100" r="16"/><rect x="272" y="120" width="36" height="52" rx="12"/>
+    </g>
+    <text x="200" y="232" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="700" fill="#fff">Team photos</text>
+</svg>

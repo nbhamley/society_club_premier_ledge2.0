@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Something went wrong')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container narrow error-page">
+    <p class="error-code" th:text="${status != null} ? ${status} : 500">500</p>
+    <h1>Something went wrong</h1>
+    <p th:text="${message != null} ? ${message} : 'Something went wrong on our side. Please try again.'">Message</p>
+    <p><a class="btn" th:href="@{/}">Go to the home page</a></p>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

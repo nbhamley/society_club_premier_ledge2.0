@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Contacts')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Contacts</h1>
+    <nav th:replace="~{fragments/admin-layout :: adminNav('contacts')}"></nav>
+
+    <!-- Shown once, straight after an invite, from a flash attribute. -->
+    <div class="flash" role="status" th:if="${inviteTicket != null}">
+        <p>Temporary password for the invited admin (shown only this once):
+            <code data-copy-source th:text="${inviteTicket.temporaryPassword}">password</code>
+            <button type="button" class="btn btn-small btn-secondary" data-copy-button>Copy</button></p>
+        <p class="muted">They can sign in once the other admins approve the invitation, and should change it on their profile page.</p>
+    </div>
+
+    <section class="section">
+        <h2>Admin team <small class="muted" th:text="'(' + ${contactsPage.adminCount} + ')'">(3)</small></h2>
+        <p class="muted">Inviting or removing an admin needs approval from the other admins.</p>
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Admin</th><th>Email</th><th>Phone</th><th></th></tr></thead>
+            <tbody>
+            <tr th:each="a : ${contactsPage.admins}">
+                <td><strong th:text="${a.fullName != null} ? ${a.fullName} : ${a.username}">Admin</strong>
+                    <small class="muted" th:text="'(' + ${a.username} + ')'">(user)</small>
+                    <span class="chip" th:if="${a.alsoPlayer}">also a player</span>
+                    <span class="chip" th:if="${a.self}">you</span></td>
+                <td th:text="${a.email}">email</td>
+                <td th:text="${a.phone}">phone</td>
+                <td><form class="inline" th:if="${a.canRemove}" th:action="@{/society-admin/admins/{id}/remove(id=${a.userId})}" method="post"
+                          data-confirm="Request removal of this admin?">
+                    <button class="btn btn-small btn-danger" type="submit">Request removal</button></form></td>
+            </tr>
+            </tbody></table></div>
+        <details class="card"><summary>Invite an admin</summary>
+            <form class="form" th:action="@{/society-admin/admins/invite}" method="post">
+                <div class="form-grid">
+                    <label>Username <input type="text" name="username" maxlength="40" pattern="[A-Za-z0-9._\-]{3,40}" autocomplete="off" required></label>
+                    <label>Full name <input type="text" name="fullName" maxlength="120"></label>
+                    <label>Email <input type="email" name="email" maxlength="200" autocomplete="off" required></label>
+                    <label>Phone <input type="tel" name="phone" maxlength="30"></label>
+                </div>
+                <p class="muted">A temporary password is generated and shown once after you submit.</p>
+                <button class="btn" type="submit">Send for approval</button></form></details>
+    </section>
+
+    <section class="section">
+        <h2>Contact cards</h2>
+        <div class="grid grid-3">
+            <article class="card" th:each="c : ${contactsPage.contacts}">
+                <h3 th:text="${c.name}">Name</h3>
+                <p class="muted" th:text="${c.roleTitle}">Role</p>
+                <p th:if="${c.phone}" th:text="${c.phone}">phone</p>
+                <p th:if="${c.email}" th:text="${c.email}">email</p>
+                <p class="actions">
+                    <a class="btn btn-small" th:if="${c.whatsappLink}" th:href="${c.whatsappLink}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                    <a class="btn btn-small btn-secondary" th:if="${c.callLink}" th:href="${c.callLink}">Call</a>
+                    <a class="btn btn-small btn-secondary" th:if="${c.mailLink}" th:href="${c.mailLink}">Email</a>
+                <form class="inline" th:unless="${c.hasLogin}" th:action="@{/society-admin/contacts/{id}/delete(id=${c.id})}" method="post"
+                      data-confirm="Delete this contact?">
+                    <button class="btn btn-small btn-danger" type="submit">Delete</button></form>
+                </p>
+            </article>
+        </div>
+        <details class="card"><summary>Add a contact</summary>
+            <form class="form" th:action="@{/society-admin/contacts}" method="post">
+                <div class="form-grid">
+                    <label>Name <input type="text" name="name" maxlength="120" required></label>
+                    <label>Role <input type="text" name="roleTitle" maxlength="80" placeholder="Treasurer, Ground manager..."></label>
+                    <label>Phone <input type="tel" name="phone" maxlength="30"></label>
+                    <label>WhatsApp number <input type="tel" name="whatsappNumber" maxlength="30"></label>
+                    <label>Email <input type="email" name="email" maxlength="200"></label>
+                </div>
+                <button class="btn" type="submit">Add contact</button></form></details>
+    </section>
+
+    <section class="section">
+        <h2>Vendor directory</h2>
+        <p th:unless="${contactsPage.vendorsAvailable}" class="muted">Vendors are included from the Standard plan.
+            <a th:href="@{/society-admin/billing}">See plans</a>.</p>
+        <div class="table-wrap" th:if="${contactsPage.vendorsAvailable}"><table class="table">
+            <thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Reach out</th></tr></thead>
+            <tbody>
+            <tr th:each="v : ${contactsPage.vendors}">
+                <td th:text="${v.name}">Vendor</td><td th:text="${v.categoryLabel}">Venue</td>
+                <td><span th:text="${v.contactPerson}">Person</span> <small class="muted" th:text="${v.phone}">phone</small></td>
+                <td class="actions">
+                    <a class="btn btn-small" th:if="${v.whatsappLink}" th:href="${v.whatsappLink}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                    <a class="btn btn-small btn-secondary" th:if="${v.callLink}" th:href="${v.callLink}">Call</a>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(contactsPage.vendors)}"><td colspan="4" class="muted">No vendors yet. <a th:href="@{/society-admin/vendors}">Add one</a>.</td></tr>
+            </tbody></table></div>
+    </section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

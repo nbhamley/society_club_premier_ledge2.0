@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" width="400" height="260" role="img" aria-label="Opening ceremony">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1565c0"/><stop offset="1" stop-color="#2e7d32"/></linearGradient></defs>
+    <rect width="400" height="260" fill="url(#g)"/>
+    <rect y="190" width="400" height="70" fill="#1b5e20" opacity=".55"/>
+    <path d="M140 110h120l-10 60h-100z" fill="#ffd54f"/>
+    <path d="M150 170h100v14H150z" fill="#ffb300"/>
+    <circle cx="200" cy="92" r="18" fill="#ffd54f"/>
+    <text x="200" y="232" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="700" fill="#fff">Opening ceremony</text>
+</svg>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Players &ndash; ' + ${society.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1 th:text="${society.name}">Society</h1>
+    <nav th:replace="~{fragments/layout :: societyNav(${society.name}, ${society.slug}, 'players')}"></nav>
+
+    <h2>Players</h2>
+    <p class="muted">Names, roles, teams and playing statistics only. Contact details are private.</p>
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>Player</th><th>Role</th><th>Team</th><th>Matches</th><th>Runs</th><th>Wickets</th></tr></thead>
+            <tbody>
+            <tr th:each="p : ${players}">
+                <td><a th:href="@{/society/{s}/player/{id}(s=${society.slug},id=${p.id})}" th:text="${p.name}">Player</a></td>
+                <td th:text="${p.role != null} ? ${p.role.label} : '-'">Batsman</td>
+                <td th:text="${p.teamName != null} ? ${p.teamName} : 'Unassigned'">Team</td>
+                <td th:text="${p.matchesPlayed}">0</td><td th:text="${p.runs}">0</td><td th:text="${p.wickets}">0</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(players)}"><td colspan="6" class="muted">No players yet.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Register &ndash; ' + ${options.societyName})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container narrow">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <p class="muted"><a th:href="@{/society/{s}(s=${options.societySlug})}" th:text="${options.societyName}">Society</a></p>
+    <h1>Register as a player</h1>
+
+    <p th:if="${#lists.isEmpty(options.seasons)}" class="flash">
+        Registration is not open right now. Check the <a th:href="@{/society/{s}/seasons(s=${options.societySlug})}">seasons page</a> later.</p>
+
+    <form class="card form" th:unless="${#lists.isEmpty(options.seasons)}" th:action="@{/society/{s}/register(s=${options.societySlug})}"
+          th:object="${form}" method="post" novalidate>
+        <p class="muted">Your details are shared only with this society's admins. Registrations are reviewed by the admin team.
+            If you are an admin, use the email address of your login so your player profile links to it automatically.</p>
+        <ul th:replace="~{fragments/layout :: formErrors}"></ul>
+        <div class="form-grid">
+            <label>Season
+                <select th:field="*{seasonId}" required>
+                    <option th:each="s : ${options.seasons}" th:value="${s.id}" th:text="${s.name}">Winter Cup</option>
+                </select></label>
+            <label>Full name <input type="text" th:field="*{fullName}" maxlength="120" required></label>
+            <label>Email <input type="email" th:field="*{email}" maxlength="200" required></label>
+            <label>Phone <input type="tel" th:field="*{phone}" maxlength="30"></label>
+            <label>Date of birth <input type="date" th:field="*{dateOfBirth}"></label>
+            <label>Flat number <input type="text" th:field="*{flatNumber}" maxlength="20"></label>
+            <label>Playing role
+                <select th:field="*{role}"><option value="">Choose</option>
+                    <option th:each="r : ${T(com.scpl.model.PlayerRole).values()}" th:value="${r}" th:text="${r.label}">Batsman</option></select></label>
+            <label>Batting
+                <select th:field="*{battingStyle}"><option value="">Choose</option>
+                    <option th:each="b : ${T(com.scpl.model.BattingStyle).values()}" th:value="${b}" th:text="${b.label}">Right-hand bat</option></select></label>
+            <label>Bowling
+                <select th:field="*{bowlingStyle}"><option value="">Choose</option>
+                    <option th:each="b : ${T(com.scpl.model.BowlingStyle).values()}" th:value="${b}" th:text="${b.label}">Right-arm fast</option></select></label>
+            <label class="span-2">Anything else? <textarea th:field="*{notes}" rows="3" maxlength="500"></textarea></label>
+        </div>
+        <div class="hp" aria-hidden="true"><label>Company website <input type="text" th:field="*{companyUrl}" tabindex="-1" autocomplete="off"></label></div>
+        <button class="btn" type="submit">Send registration</button>
+    </form>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

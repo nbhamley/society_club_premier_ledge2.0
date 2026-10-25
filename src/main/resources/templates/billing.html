@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Billing')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Billing</h1>
+    <nav th:replace="~{fragments/admin-layout :: adminNav('billing')}"></nav>
+
+    <div class="flash flash-err" role="alert" th:if="${billing.readOnly}">
+        Your society is read-only: you can view everything but not change it. Pay below to restore full access.</div>
+    <div class="flash" th:if="${billing.status.name() == 'PAST_DUE' and !billing.readOnly and billing.readOnlyFrom != null}">
+        Payment is overdue. The society becomes read-only on
+        <strong th:text="${#temporals.format(billing.readOnlyFrom, 'd MMM yyyy')}">date</strong> unless it is paid.</div>
+    <div class="flash" th:if="${billing.trialDaysLeft != null}">
+        Free trial: <strong th:text="${billing.trialDaysLeft}">14</strong> day(s) left.
+        <span th:if="${billing.nextPlanLabel}" th:text="'Planned plan after the trial: ' + ${billing.nextPlanLabel} + '.'"></span></div>
+
+    <section class="card">
+        <h2>Subscription</h2>
+        <dl class="facts">
+            <dt>Plan</dt><dd><strong th:text="${billing.planLabel}">Standard</strong> <span class="badge" th:text="${billing.statusLabel}">Active</span></dd>
+            <dt>Monthly cost</dt><dd><span th:replace="~{fragments/admin-layout :: money(${billing.monthlyCost})}"></span></dd>
+            <dt>Started</dt><dd th:text="${#temporals.format(billing.startedAt, 'd MMM yyyy')}">date</dd>
+            <dt th:if="${billing.lastPaymentAt}">Last payment</dt><dd th:if="${billing.lastPaymentAt}" th:text="${#temporals.format(billing.lastPaymentAt, 'd MMM yyyy')}">date</dd>
+            <dt th:if="${billing.nextBillingAt}">Next invoice</dt><dd th:if="${billing.nextBillingAt}" th:text="${#temporals.format(billing.nextBillingAt, 'd MMM yyyy')}">date</dd>
+            <dt>Auto-renew</dt><dd th:text="${billing.autoRenew} ? 'On' : 'Off'">On</dd>
+        </dl>
+        <form class="inline" th:action="@{/society-admin/billing/auto-renew}" method="post"
+              th:unless="${billing.status.name() == 'CANCELLED'}">
+            <input type="hidden" name="enabled" th:value="${!billing.autoRenew}">
+            <button class="btn btn-small btn-secondary" type="submit" th:text="${billing.autoRenew} ? 'Turn auto-renew off' : 'Turn auto-renew on'">Toggle</button></form>
+    </section>
+
+    <section class="section">
+        <h2>Plans</h2>
+        <div class="grid grid-3 pricing">
+            <article class="card plan" th:each="p : ${billing.plans}" th:if="${p.plan.name() != 'FREE_TRIAL'}"
+                     th:classappend="${p.plan == billing.plan and billing.status.name() != 'TRIAL'} ? 'current'">
+                <h3 th:text="${p.label}">Plan</h3>
+                <p class="price">&#8377;<span th:text="${#numbers.formatDecimal(p.monthlyCost, 1, 'COMMA', 0, 'POINT')}">999</span><small>/month</small></p>
+                <ul class="plain"><li th:each="f : ${p.features}" th:text="${f}">Feature</li></ul>
+                <form class="inline" th:action="@{/society-admin/billing/plan}" method="post"
+                      th:unless="${billing.status.name() == 'CANCELLED'}">
+                    <input type="hidden" name="plan" th:value="${p.plan}">
+                    <button class="btn btn-small btn-secondary" type="submit"
+                            th:text="${billing.status.name() == 'TRIAL'} ? 'Plan to start on ' + ${p.label} : 'Switch to ' + ${p.label}">Switch</button></form>
+                <form class="inline" th:action="@{/society-admin/billing/pay}" method="post"
+                      th:unless="${billing.status.name() == 'ACTIVE' and p.plan == billing.plan}">
+                    <input type="hidden" name="plan" th:value="${p.plan}">
+                    <button class="btn btn-small" type="submit" th:text="'Pay now for ' + ${p.label}">Pay now</button></form>
+            </article>
+        </div>
+        <p class="muted">A downgrade is refused while your teams, players or seasons would not fit the smaller plan.
+            Payments in this demo use a stand-in gateway.</p>
+    </section>
+
+    <section class="card">
+        <h2>Your data stays yours</h2>
+        <p>Even if payment lapses or the subscription is cancelled, you can still create and download an encrypted backup
+            of all your society's data. <a th:href="@{/society-admin/backup}">Go to backups</a>.</p>
+    </section>
+
+    <section class="section">
+        <h2>Invoices</h2>
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Invoice</th><th>Issued</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            <tr th:each="i : ${billing.invoices}">
+                <td th:text="${i.number}">INV-1</td>
+                <td th:text="${#temporals.format(i.issuedAt, 'd MMM yyyy')}">date</td>
+                <td th:text="${i.currency} + ' ' + ${#numbers.formatDecimal(i.amount, 1, 'COMMA', 2, 'POINT')}">INR 999.00</td>
+                <td><span class="badge" th:text="${i.statusLabel}">Paid</span></td>
+                <td><a class="btn btn-small btn-secondary" th:href="@{/society-admin/billing/invoices/{id}/pdf(id=${i.id})}">PDF</a></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(billing.invoices)}"><td colspan="5" class="muted">No invoices yet.</td></tr>
+            </tbody></table></div>
+    </section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

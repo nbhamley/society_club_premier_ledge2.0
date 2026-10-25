@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('About')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>About SCPL</h1>
+    <p class="lead">Society Club Premier League is one platform for many residential societies. Each society gets
+        its own season, teams, players, auction, fixtures and admins, completely separate from every other society.</p>
+
+    <div class="grid grid-3">
+        <article class="card"><h3>Private by design</h3>
+            <p>Player contact details are visible only to the player and their own society's admins. Public pages show
+                names, roles and statistics. Platform staff never see player details.</p></article>
+        <article class="card"><h3>Decisions need agreement</h3>
+            <p>Approving players, dropping players, deleting a season and bulk imports each need votes from several of
+                your admins, so no single admin can change things alone.</p></article>
+        <article class="card"><h3>Your data is yours</h3>
+            <p>Export an encrypted backup of everything at any time, even if a subscription lapses.</p></article>
+    </div>
+
+    <section class="section"><h2>Plans</h2>
+        <div th:replace="~{fragments/layout :: pricing(${plans})}"></div></section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

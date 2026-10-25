@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Notifications')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container narrow">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Notifications</h1>
+    <form class="inline" th:action="@{/notifications/read-all}" method="post" th:unless="${#lists.isEmpty(notifications)}">
+        <button class="btn btn-small btn-secondary" type="submit">Mark all as read</button>
+    </form>
+
+    <ul class="plain notification-list">
+        <li class="card" th:each="n : ${notifications}" th:classappend="${!n.read} ? 'unread'">
+            <p><strong th:text="${n.title}">Title</strong>
+                <small class="muted" th:text="${#temporals.format(n.createdAt, 'd MMM yyyy, HH:mm')}">date</small></p>
+            <p th:if="${n.message}" th:text="${n.message}">Message</p>
+            <p>
+                <a th:if="${n.link}" th:href="@{${n.link}}">Open</a>
+            <form class="inline" th:if="${!n.read}" th:action="@{/notifications/{id}/read(id=${n.id})}" method="post">
+                <button class="link-btn" type="submit">Mark as read</button></form>
+            </p>
+        </li>
+    </ul>
+    <p class="muted" th:if="${#lists.isEmpty(notifications)}">You have no notifications.</p>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

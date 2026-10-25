@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${detail.season.name} + ' &ndash; ' + ${detail.societyName})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <p class="muted"><a th:href="@{/society/{s}/seasons(s=${detail.societySlug})}" th:text="${detail.societyName} + ' / Seasons'">Seasons</a></p>
+    <h1 th:text="${detail.season.name}">Season</h1>
+    <p><span class="badge" th:text="${detail.season.statusLabel}">Ongoing</span>
+        <span class="muted" th:text="${detail.season.oversPerMatch} + ' overs per match'">10 overs per match</span>
+        <span class="muted" th:if="${detail.season.startDate}"
+              th:text="'&middot; ' + ${#temporals.format(detail.season.startDate, 'd MMM yyyy')} + (${detail.season.endDate} != null ? ' &ndash; ' + ${#temporals.format(detail.season.endDate, 'd MMM yyyy')} : '')">dates</span></p>
+    <p th:if="${detail.season.description}" th:text="${detail.season.description}">About</p>
+    <p th:if="${detail.season.registrationOpen}">
+        <a class="btn" th:href="@{/society/{s}/register(s=${detail.societySlug},season=${detail.season.id})}">Register for this season</a></p>
+    <div th:if="${canShare}" th:replace="~{fragments/share-row :: shareRow('season', ${detail.season.id})}"></div>
+
+    <section class="section"><h2>Points table</h2>
+        <div th:replace="~{fragments/layout :: standings(${detail.standings})}"></div></section>
+
+    <section class="section" th:unless="${#lists.isEmpty(detail.teams)}"><h2>Teams</h2>
+        <div class="grid grid-4">
+            <article class="card" th:each="t : ${detail.teams}">
+                <p><span class="dot" th:style="${t.color != null} ? 'background:' + ${t.color}"></span>
+                    <strong th:text="${t.name}">Team</strong></p>
+                <p class="muted" th:if="${t.captainName}" th:text="'Captain: ' + ${t.captainName}">Captain</p>
+            </article>
+        </div></section>
+
+    <section class="section"><h2>Matches</h2>
+        <div class="grid grid-2"><div th:each="m : ${detail.matches}" th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></div>
+        <p class="muted" th:if="${#lists.isEmpty(detail.matches)}">No matches yet.</p></section>
+
+    <section class="section" th:unless="${#lists.isEmpty(detail.awards)}"><h2>Awards</h2>
+        <div class="grid grid-3">
+            <article class="card" th:each="a : ${detail.awards}">
+                <h3 th:text="${a.title}">Award</h3><p><strong th:text="${a.winnerName}">Winner</strong></p>
+            </article>
+        </div></section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

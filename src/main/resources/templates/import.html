@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Bulk import')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Bulk import</h1>
+    <nav th:replace="~{fragments/admin-layout :: adminNav('import')}"></nav>
+    <p class="muted">Upload a CSV, JSON or Excel (.xlsx) file, or a ZIP of those. It is analysed within a minute and
+        turned into a review file. Rows with conflicts are left out by default. Once you approve, the other admins vote
+        before anything is added.</p>
+
+    <form class="card form" th:action="@{/society-admin/import}" method="post" enctype="multipart/form-data"
+          data-upload-form th:attr="data-max-bytes=${maxBytes}">
+        <label>File (CSV, JSON, XLSX or ZIP, up to <span th:text="${#numbers.formatDecimal(maxBytes / 1048576.0, 1, 0)}">10</span> MB)
+            <input type="file" name="file" accept=".csv,.json,.xlsx,.zip" required></label>
+        <p class="field-errors" role="alert" data-role="upload-error" hidden></p>
+        <button class="btn" type="submit">Upload</button>
+    </form>
+
+    <section class="section" th:if="${preview != null or previewError != null}">
+        <h2>Review preview &ndash; batch #<span th:text="${previewBatchId}">1</span></h2>
+        <p class="muted" th:if="${previewError}" th:text="${previewError}">error</p>
+        <th:block th:if="${preview != null}">
+            <p><span class="badge" th:text="${preview.total} + ' rows'">0</span>
+                <span class="badge" th:text="${preview.included} + ' will be imported'">0</span>
+                <span class="badge" th:text="${preview.withConflicts} + ' with conflicts'">0</span>
+                <small class="muted" th:if="${preview.total > #lists.size(preview.rows)}" th:text="'Showing the first ' + ${#lists.size(preview.rows)}"></small></p>
+            <div class="table-wrap"><table class="table">
+                <thead><tr><th>Kind</th><th>Include</th><th>Values</th><th>Confidence</th><th>Conflict</th><th>Source</th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${preview.rows}" th:classappend="${r.conflict != null} ? 'conflict'">
+                    <td th:text="${r.kind.label}">Players</td>
+                    <td th:text="${r.include} ? 'Yes' : 'No'">Yes</td>
+                    <td><span class="kv" th:each="f : ${r.fields}"><b th:text="${f.key}">key</b> <span th:text="${f.value}">value</span></span></td>
+                    <td th:text="${r.confidence} + '%'">90%</td>
+                    <td><code th:if="${r.conflict}" th:text="${r.conflict}">email_exists</code></td>
+                    <td><small class="muted" th:text="${r.sourceFile} + ' row ' + ${r.sourceRow}">file</small></td>
+                </tr>
+                </tbody></table></div>
+        </th:block>
+    </section>
+
+    <section class="section">
+        <h2>Uploads</h2>
+        <article class="card batch" th:each="b : ${batches}">
+            <h3><span th:text="${b.fileName}">file.csv</span> <span class="badge" th:text="${b.statusLabel}">Ready for review</span></h3>
+            <p class="muted"><span th:text="${b.sizeLabel}">1 KB</span> &middot; uploaded by <span th:text="${b.uploadedBy}">Admin</span> on
+                <span th:text="${#temporals.format(b.createdAt, 'd MMM yyyy, HH:mm')}">date</span>
+                <span th:if="${b.reviewDeadline != null and b.status.name() == 'READY_FOR_REVIEW'}"
+                      th:text="'&middot; review by ' + ${#temporals.format(b.reviewDeadline, 'd MMM yyyy')}"></span></p>
+            <p class="flash flash-err" th:if="${b.errorMessage}" th:text="${b.errorMessage}">error</p>
+            <p th:if="${b.report != null}">
+                <span class="badge" th:each="e : ${b.report.countsByKind}" th:text="${e.key} + ': ' + ${e.value}">Players: 4</span>
+                <span class="badge" th:if="${b.report.rowsWithConflicts > 0}" th:text="${b.report.rowsWithConflicts} + ' conflict(s)'">1 conflict</span>
+                <small class="muted" th:text="'read by ' + ${b.report.provider}">rule-based</small></p>
+            <ul class="plain muted" th:if="${b.report != null and !#lists.isEmpty(b.report.warnings)}">
+                <li th:each="w : ${b.report.warnings}" th:text="${w}">warning</li></ul>
+            <p th:if="${b.approvalId != null}">Approval: <strong th:text="${b.approvalStatusLabel}">Pending</strong>
+                &middot; <a th:href="@{/society-admin/approvals}">vote on it</a></p>
+
+            <p class="actions">
+                <a class="btn btn-small btn-secondary" th:if="${b.hasReview}" th:href="@{/society-admin/import(batch=${b.id})}">Preview</a>
+                <a class="btn btn-small btn-secondary" th:if="${b.hasReview}" th:href="@{/society-admin/import/{id}/review(id=${b.id})}">Download review file</a>
+                <a class="btn btn-small btn-secondary" th:if="${b.hasFailed}" th:href="@{/society-admin/import/{id}/failed(id=${b.id})}">Download failed rows</a>
+            </p>
+
+            <th:block th:if="${b.status.name() == 'READY_FOR_REVIEW' and (b.approvalStatusLabel == null or b.approvalStatusLabel != 'Pending')}">
+                <form class="form" th:action="@{/society-admin/import/{id}/replace(id=${b.id})}" method="post" enctype="multipart/form-data"
+                      data-upload-form th:attr="data-max-bytes=${maxBytes}">
+                    <label>Edited review file (.csv) <input type="file" name="file" accept=".csv" required></label>
+                    <p class="field-errors" role="alert" data-role="upload-error" hidden></p>
+                    <button class="btn btn-small btn-secondary" type="submit">Replace review file</button>
+                    <small class="muted">Set Include to N to skip a row. Conflicts are checked again after upload.</small></form>
+                <form class="inline" th:action="@{/society-admin/import/{id}/approve(id=${b.id})}" method="post">
+                    <button class="btn btn-small" type="submit">Approve for import</button></form>
+                <form class="inline" th:action="@{/society-admin/import/{id}/reject(id=${b.id})}" method="post"
+                      data-confirm="Reject this import? Its files are deleted after the retention period.">
+                    <input type="text" name="reason" placeholder="Reason (optional)" maxlength="200">
+                    <button class="btn btn-small btn-danger" type="submit">Reject</button></form>
+            </th:block>
+        </article>
+        <p class="muted" th:if="${#lists.isEmpty(batches)}">No uploads yet.</p>
+    </section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

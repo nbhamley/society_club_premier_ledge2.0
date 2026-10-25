@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Admin console')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <h1 th:text="${console.societyName}">Society</h1>
+    <p class="muted"><span class="badge" th:text="${console.societyStatus}">Active</span>
+        <span th:text="${console.adminCount} + ' admins'">3 admins</span> &middot;
+        <a th:href="@{/society/{s}(s=${console.societySlug})}">Public page</a></p>
+    <div class="flash flash-err" role="alert" th:if="${console.kpis.readOnly}">
+        This society is read-only, so changes are blocked. <a th:href="@{/society-admin/billing}">Open billing</a> to fix it.</div>
+    <div class="flash" th:if="${console.adminCount < 3}">
+        A society needs at least 3 admins for approvals to work. <a th:href="@{/society-admin/contacts}">Invite an admin</a>.</div>
+
+    <nav th:replace="~{fragments/admin-layout :: adminNav('console')}"></nav>
+
+    <form class="toolbar" method="get" th:action="@{/society-admin}">
+        <label>Season
+            <select name="season" data-autosubmit>
+                <option th:each="s : ${console.seasons}" th:value="${s.id}" th:text="${s.name} + ' (' + ${s.statusLabel} + ')'"
+                        th:selected="${s.id == console.selectedSeasonId}">Season</option></select></label>
+        <button class="btn btn-small btn-secondary" type="submit">Show</button>
+    </form>
+
+    <!-- Console tabs: admin.js shows the panel named in the URL hash; without JS every panel is visible. -->
+    <nav class="tabs" data-tabs aria-label="Console tabs">
+        <a href="#overview" data-tab="overview">Overview</a>
+        <a href="#seasons" data-tab="seasons">Seasons</a>
+        <a href="#teams" data-tab="teams">Teams</a>
+        <a href="#players" data-tab="players">Players</a>
+        <a href="#registrations" data-tab="registrations">Registrations
+            <span class="badge" th:with="n=${#lists.size(console.registrations.?[actionable])}" th:if="${n > 0}" th:text="${n}">3</span></a>
+        <a href="#auction" data-tab="auction">Auction</a>
+        <a href="#matches" data-tab="matches">Matches</a>
+        <a href="#sponsors" data-tab="sponsors">Sponsors</a>
+        <a href="#awards" data-tab="awards">Awards</a>
+        <a href="#gallery" data-tab="gallery">Gallery</a>
+        <a href="#settings" data-tab="settings">Settings</a>
+    </nav>
+
+    <!-- ===================== Overview ===================== -->
+    <section class="tab-panel" data-panel="overview" id="overview">
+        <h2>Overview</h2>
+        <div class="grid grid-4 kpis">
+            <a class="card stat" href="#teams" data-tab-link="teams"><span class="stat-num" th:text="${console.kpis.teams}">0</span><span>Teams</span></a>
+            <a class="card stat" href="#players" data-tab-link="players"><span class="stat-num" th:text="${console.kpis.players}">0</span><span>Players</span></a>
+            <a class="card stat" href="#matches" data-tab-link="matches"><span class="stat-num" th:text="${console.kpis.matches}">0</span><span>Matches</span></a>
+            <a class="card stat" th:href="@{/society-admin/approvals}"><span class="stat-num" th:text="${console.kpis.pendingApprovals}">0</span>
+                <span>Pending approvals<small th:if="${console.kpis.awaitingMyVote > 0}" th:text="' (' + ${console.kpis.awaitingMyVote} + ' need your vote)'"></small></span></a>
+            <a class="card stat" th:href="@{/society-admin/billing}"><span class="stat-num" th:text="${console.kpis.planLabel != null} ? ${console.kpis.planLabel} : '-'">Plan</span>
+                <span th:text="${console.kpis.subscriptionStatus != null} ? ${console.kpis.subscriptionStatus} : 'No subscription'">Status</span>
+                <small th:if="${console.kpis.trialDaysLeft != null}" th:text="${console.kpis.trialDaysLeft} + ' trial day(s) left'"></small></a>
+            <div class="card stat span-2"><span class="stat-num" th:text="${console.kpis.nextFixture != null} ? ${console.kpis.nextFixture} : 'None scheduled'">Fixture</span>
+                <span th:text="${console.kpis.nextFixtureDate != null} ? ${#temporals.format(console.kpis.nextFixtureDate, 'EEE d MMM, HH:mm')} : 'Next fixture'">date</span></div>
+        </div>
+        <h3 th:if="${console.selectedSeasonName}" th:text="'Points table - ' + ${console.selectedSeasonName}">Points table</h3>
+        <div th:if="${console.selectedSeasonId != null}" th:replace="~{fragments/layout :: standings(${console.standings})}"></div>
+        <p class="muted" th:if="${console.selectedSeasonId == null}">Create a season to get started.</p>
+    </section>
+
+    <!-- ===================== Seasons ===================== -->
+    <section class="tab-panel" data-panel="seasons" id="seasons">
+        <h2>Seasons</h2>
+        <details class="card"><summary>New season</summary>
+            <form class="form" th:action="@{/society-admin/seasons}" method="post">
+                <div th:replace="~{fragments/admin-forms :: seasonFields(null)}"></div>
+                <button class="btn" type="submit">Create season</button>
+            </form></details>
+
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Season</th><th>Status</th><th>Dates</th><th>Overs</th><th>Purse</th><th>Budget</th><th>Actions</th></tr></thead>
+            <tbody>
+            <tr th:each="s : ${console.seasons}">
+                <td><strong th:text="${s.name}">Season</strong> <small class="muted" th:text="${s.year}">2026</small></td>
+                <td><span class="badge" th:text="${s.statusLabel}">Ongoing</span></td>
+                <td th:text="${#temporals.format(s.startDate, 'd MMM yyyy')} + ' - ' + ${#temporals.format(s.endDate, 'd MMM yyyy')}">dates</td>
+                <td th:text="${s.oversPerMatch}">10</td>
+                <td><span th:replace="~{fragments/admin-layout :: money(${s.teamPurse})}"></span></td>
+                <td><span th:replace="~{fragments/admin-layout :: money(${s.plannedBudget})}"></span></td>
+                <td class="actions">
+                    <form class="inline" th:action="@{/society-admin/seasons/{id}/status(id=${s.id})}" method="post">
+                        <select name="status" aria-label="Season status">
+                            <option th:each="st : ${opts.seasonStatuses}" th:value="${st}" th:text="${st.label}" th:selected="${st == s.status}">Upcoming</option></select>
+                        <button class="btn btn-small" type="submit">Set</button></form>
+                    <details><summary>Edit</summary>
+                        <form class="form" th:action="@{/society-admin/seasons/{id}(id=${s.id})}" method="post">
+                            <div th:replace="~{fragments/admin-forms :: seasonFields(${s})}"></div>
+                            <button class="btn btn-small" type="submit">Save</button></form></details>
+                    <details><summary>Delete</summary>
+                        <form class="form" th:action="@{/society-admin/seasons/{id}/delete(id=${s.id})}" method="post"
+                              data-confirm="Request deletion of this season? It removes its teams, matches and auction lots once approved.">
+                            <p class="muted">Deleting a season needs approval from the other admins.</p>
+                            <label>Reason <input type="text" name="reason" maxlength="200"></label>
+                            <button class="btn btn-small btn-danger" type="submit">Request deletion</button></form></details>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(console.seasons)}"><td colspan="7" class="muted">No seasons yet.</td></tr>
+            </tbody></table></div>
+    </section>
+
+    <!-- ===================== Teams ===================== -->
+    <section class="tab-panel" data-panel="teams" id="teams">
+        <h2>Teams</h2>
+        <details class="card"><summary>New team</summary>
+            <form class="form" th:action="@{/society-admin/teams}" method="post">
+                <label>Season
+                    <select name="seasonId" required>
+                        <option th:each="s : ${console.seasons}" th:value="${s.id}" th:text="${s.name}" th:selected="${s.id == console.selectedSeasonId}">Season</option></select></label>
+                <div th:replace="~{fragments/admin-forms :: teamFields(null)}"></div>
+                <button class="btn" type="submit">Create team</button>
+            </form></details>
+
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Team</th><th>Season</th><th>Captain</th><th>Purse left</th><th>Actions</th></tr></thead>
+            <tbody>
+            <tr th:each="t : ${console.teams}">
+                <td><span class="dot" th:style="${t.color != null} ? 'background:' + ${t.color}"></span>
+                    <strong th:text="${t.name}">Team</strong> <small class="muted" th:text="${t.shortName}">T</small></td>
+                <td th:text="${t.seasonName}">Season</td>
+                <td th:text="${t.captainName != null} ? ${t.captainName} : '-'">Captain</td>
+                <td><span th:replace="~{fragments/admin-layout :: money(${t.purseRemaining})}"></span></td>
+                <td class="actions">
+                    <details><summary>Edit</summary>
+                        <form class="form" th:action="@{/society-admin/teams/{id}(id=${t.id})}" method="post">
+                            <div th:replace="~{fragments/admin-forms :: teamFields(${t})}"></div>
+                            <button class="btn btn-small" type="submit">Save</button></form></details>
+                    <details><summary>Captain</summary>
+                        <form class="form" th:action="@{/society-admin/teams/{id}/captain(id=${t.id})}" method="post">
+                            <label>Captain (a player of this team)
+                                <select name="playerId"><option value="">No captain</option>
+                                    <option th:each="p : ${console.players}" th:if="${p.teamId == t.id}" th:value="${p.id}" th:text="${p.name}"
+                                            th:selected="${p.id == t.captainId}">Player</option></select></label>
+                            <button class="btn btn-small" type="submit">Set captain</button></form></details>
+                    <form class="inline" th:action="@{/society-admin/teams/{id}/delete(id=${t.id})}" method="post"
+                          data-confirm="Delete this team? This only works for a team with no players and no fixtures.">
+                        <button class="btn btn-small btn-danger" type="submit">Delete</button></form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(console.teams)}"><td colspan="5" class="muted">No teams yet.</td></tr>
+            </tbody></table></div>
+    </section>
+
+    <!-- ===================== Players ===================== -->
+    <section class="tab-panel" data-panel="players" id="players">
+        <h2>Players</h2>
+        <p class="muted">You are seeing contact details because you are an admin of this society. They are never shown publicly.</p>
+        <details class="card"><summary>New player</summary>
+            <form class="form" th:action="@{/society-admin/players}" method="post">
+                <div th:replace="~{fragments/admin-forms :: playerFields(null)}"></div>
+                <button class="btn" type="submit">Add player</button>
+            </form></details>
+
+        <form id="bulk-players" class="toolbar" th:action="@{/society-admin/players/bulk-assign}" method="post">
+            <label class="check"><input type="checkbox" data-select-all="players"> Select all</label>
+            <label>Move ticked players to
+                <select name="teamId"><option value="">No team (release)</option>
+                    <option th:each="t : ${console.teams}" th:value="${t.id}" th:text="${t.name} + ' (' + ${t.seasonName} + ')'">Team</option></select></label>
+            <button class="btn btn-small" type="submit">Apply</button>
+        </form>
+
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th></th><th>Player</th><th>Role</th><th>Team</th><th>Contact</th><th>Flat</th><th>M</th><th>Runs</th><th>Wkts</th><th>Actions</th></tr></thead>
+            <tbody>
+            <tr th:each="p : ${console.players}" th:classappend="${!p.active} ? 'inactive'">
+                <td><input type="checkbox" name="ids" th:value="${p.id}" form="bulk-players" data-select-group="players" th:aria-label="'Select ' + ${p.name}"></td>
+                <td><strong th:text="${p.name}">Player</strong> <span class="badge" th:unless="${p.active}">Dropped</span></td>
+                <td th:text="${p.role != null} ? ${p.role.label} : '-'">Batsman</td>
+                <td th:text="${p.teamName != null} ? ${p.teamName} : '-'">Team</td>
+                <td><span th:text="${p.email}">email</span><br><small class="muted" th:text="${p.phone}">phone</small></td>
+                <td th:text="${p.flatNumber}">A-101</td>
+                <td th:text="${p.matchesPlayed}">0</td><td th:text="${p.runs}">0</td><td th:text="${p.wickets}">0</td>
+                <td class="actions">
+                    <details th:if="${p.active}"><summary>Edit</summary>
+                        <form class="form" th:action="@{/society-admin/players/{id}(id=${p.id})}" method="post">
+                            <div th:replace="~{fragments/admin-forms :: playerFields(${p})}"></div>
+                            <button class="btn btn-small" type="submit">Save</button></form></details>
+                    <details th:if="${p.active}"><summary>Drop</summary>
+                        <form class="form" th:action="@{/society-admin/players/{id}/drop(id=${p.id})}" method="post"
+                              data-confirm="Request that this player is dropped?">
+                            <p class="muted">Dropping a player needs approval from the other admins.</p>
+                            <label>Reason <input type="text" name="reason" maxlength="200"></label>
+                            <button class="btn btn-small btn-danger" type="submit">Request drop</button></form></details>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(console.players)}"><td colspan="10" class="muted">No players yet.</td></tr>
+            </tbody></table></div>
+    </section>
+
+    <!-- ===================== Registrations ===================== -->
+    <section class="tab-panel" data-panel="registrations" id="registrations">
+        <h2>Registrations</h2>
+        <p class="muted">Approving needs the other admins' votes. Approving several at once sends ONE batch for a single vote.
+            Rejecting happens immediately.</p>
+        <form id="bulk-regs" class="toolbar" th:action="@{/society-admin/registrations/bulk-action}" method="post">
+            <label class="check"><input type="checkbox" data-select-all="regs"> Select all pending</label>
+            <button class="btn btn-small" type="submit" name="action" value="APPROVE">Approve selected</button>
+            <button class="btn btn-small btn-danger" type="submit" name="action" value="REJECT"
+                    data-confirm="Reject the selected registrations?">Reject selected</button>
+        </form>
+
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th></th><th>Name</th><th>Contact</th><th>Season</th><th>Role</th><th>Status</th><th>Received</th><th>Actions</th></tr></thead>
+            <tbody>
+            <tr th:each="r : ${console.registrations}">
+                <td><input type="checkbox" name="ids" th:value="${r.id}" form="bulk-regs" data-select-group="regs"
+                           th:if="${r.actionable}" th:aria-label="'Select ' + ${r.fullName}"></td>
+                <td><strong th:text="${r.fullName}">Name</strong></td>
+                <td><span th:text="${r.email}">email</span><br><small class="muted" th:text="${r.phone}">phone</small></td>
+                <td th:text="${r.seasonName}">Season</td>
+                <td th:text="${r.roleLabel != null} ? ${r.roleLabel} : '-'">Role</td>
+                <td><span class="badge" th:text="${r.statusLabel}">Pending</span>
+                    <a th:if="${r.approvalId != null}" th:href="@{/society-admin/approvals}">view vote</a></td>
+                <td th:text="${#temporals.format(r.createdAt, 'd MMM, HH:mm')}">date</td>
+                <td class="actions">
+                    <th:block th:if="${r.actionable}">
+                        <form class="inline" th:action="@{/society-admin/registrations/{id}/approve(id=${r.id})}" method="post">
+                            <button class="btn btn-small" type="submit">Approve</button></form>
+                        <form class="inline" th:action="@{/society-admin/registrations/{id}/reject(id=${r.id})}" method="post"
+                              data-confirm="Reject this registration?">
+                            <button class="btn btn-small btn-danger" type="submit">Reject</button></form>
+                    </th:block>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(console.registrations)}"><td colspan="8" class="muted">No registrations yet.</td></tr>
+            </tbody></table></div>
+    </section>
+
+    <!-- ===================== Auction ===================== -->
+    <section class="tab-panel" data-panel="auction" id="auction">
+        <h2>Auction <small class="muted" th:if="${console.selectedSeasonName}" th:text="'- ' + ${console.selectedSeasonName}">Season</small></h2>
+        <p class="muted" th:if="${console.selectedSeasonId == null}">Create a season first.</p>
+
+        <th:block th:if="${console.selectedSeasonId != null}">
+            <div class="card lot" th:if="${console.liveLot != null}">
+                <p><span class="badge">Live now</span> <strong th:text="${console.liveLot.playerName}">Player</strong>
+                    <span class="badge" th:text="${console.liveLot.modeLabel}">Online bidding</span></p>
+                <p>Current bid:
+                    <strong th:text="${console.liveLot.currentBid > 0} ? '&#8377;' + ${#numbers.formatDecimal(console.liveLot.currentBid, 1, 'COMMA', 0, 'POINT')} + ' (' + ${console.liveLot.currentBidTeam} + ')' : 'none yet'">none</strong></p>
+            </div>
+
+            <form class="toolbar" th:action="@{/society-admin/auction/lots}" method="post">
+                <input type="hidden" name="seasonId" th:value="${console.selectedSeasonId}">
+                <label>Add a player to this auction
+                    <select name="playerId" required>
+                        <option th:each="p : ${console.players}" th:if="${p.active}" th:value="${p.id}" th:text="${p.name}">Player</option></select></label>
+                <button class="btn btn-small" type="submit">Add lot</button>
+                <small class="muted">Approved registrations get a lot automatically.</small>
+            </form>
+
+            <div class="table-wrap"><table class="table">
+                <thead><tr><th>Player</th><th>Base</th><th>Current bid</th><th>Sold</th><th>Status</th><th>Mode</th><th>Actions</th></tr></thead>
+                <tbody>
+                <tr th:each="l : ${console.lots}">
+                    <td><strong th:text="${l.playerName}">Player</strong></td>
+                    <td><span th:replace="~{fragments/admin-layout :: money(${l.basePrice})}"></span></td>
+                    <td th:text="${l.currentBid > 0} ? '&#8377;' + ${#numbers.formatDecimal(l.currentBid, 1, 'COMMA', 0, 'POINT')} + ' (' + ${l.currentBidTeam} + ')' : '-'">-</td>
+                    <td th:text="${l.soldTeam != null} ? ${l.soldTeam} + ' - &#8377;' + ${#numbers.formatDecimal(l.soldPrice, 1, 'COMMA', 0, 'POINT')} : '-'">-</td>
+                    <td><span class="badge" th:text="${l.statusLabel}">Pending</span></td>
+                    <td th:text="${l.modeLabel}">Online</td>
+                    <td class="actions">
+                        <form class="inline" th:if="${!l.closed and l.status.name() != 'LIVE'}"
+                              th:action="@{/society-admin/auction/lots/{id}/start(id=${l.id})}" method="post">
+                            <input type="hidden" name="season" th:value="${console.selectedSeasonId}">
+                            <button class="btn btn-small" type="submit">Start</button></form>
+                        <details th:if="${!l.closed}"><summary>Manage</summary>
+                            <form class="form" th:action="@{/society-admin/auction/lots/{id}/mode(id=${l.id})}" method="post">
+                                <input type="hidden" name="season" th:value="${console.selectedSeasonId}">
+                                <label>Mode <select name="mode">
+                                    <option th:each="m : ${opts.auctionModes}" th:value="${m}" th:text="${m.label}" th:selected="${m == l.mode}">Online</option></select></label>
+                                <button class="btn btn-small" type="submit">Set mode</button></form>
+                            <form class="form" th:action="@{/society-admin/auction/lots/{id}/bid-override(id=${l.id})}" method="post">
+                                <input type="hidden" name="season" th:value="${console.selectedSeasonId}">
+                                <label>Set the standing bid for
+                                    <select name="teamId"><option th:each="t : ${console.selectedSeasonTeams}" th:value="${t.id}" th:text="${t.name}">Team</option></select></label>
+                                <label>Amount (&#8377;) <input type="number" name="amount" min="1" step="any" required></label>
+                                <button class="btn btn-small" type="submit">Set bid</button></form>
+                            <form class="form" th:action="@{/society-admin/auction/lots/{id}/sold(id=${l.id})}" method="post">
+                                <input type="hidden" name="season" th:value="${console.selectedSeasonId}">
+                                <p class="muted">Leave team and price empty to sell to the current online bid.</p>
+                                <label>Sold to
+                                    <select name="teamId"><option value="">Current bidder</option>
+                                        <option th:each="t : ${console.selectedSeasonTeams}" th:value="${t.id}" th:text="${t.name}">Team</option></select></label>
+                                <label>Price (&#8377;) <input type="number" name="price" min="1" step="any"></label>
+                                <button class="btn btn-small" type="submit">Mark sold</button></form>
+                            <form class="form" th:action="@{/society-admin/auction/lots/{id}/unsold(id=${l.id})}" method="post"
+                                  data-confirm="Mark this player unsold?">
+                                <input type="hidden" name="season" th:value="${console.selectedSeasonId}">
+                                <button class="btn btn-small btn-secondary" type="submit">Mark unsold</button></form>
+                        </details>
+                        <form class="inline" th:if="${l.status.name() != 'PENDING'}"
+                              th:action="@{/society-admin/auction/lots/{id}/reset(id=${l.id})}" method="post"
+                              data-confirm="Reset this lot? A sale is undone and the team's purse is refunded.">
+                            <input type="hidden" name="season" th:value="${console.selectedSeasonId}">
+                            <button class="btn btn-small btn-danger" type="submit">Reset</button></form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(console.lots)}"><td colspan="7" class="muted">No lots in this season yet.</td></tr>
+                </tbody></table></div>
+        </th:block>
+    </section>
+
+    <!-- ===================== Matches ===================== -->
+    <section class="tab-panel" data-panel="matches" id="matches">
+        <h2>Matches</h2>
+        <details class="card"><summary>Schedule a match</summary>
+            <form class="form" th:action="@{/society-admin/matches}" method="post">
+                <div th:replace="~{fragments/admin-forms :: matchFields(null)}"></div>
+                <button class="btn" type="submit">Schedule</button>
+            </form></details>
+
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Fixture</th><th>When</th><th>Status</th><th>Result</th><th>Actions</th></tr></thead>
+            <tbody>
+            <tr th:each="m : ${console.matches}">
+                <td><strong th:text="${m.teamA} + ' vs ' + ${m.teamB}">A vs B</strong><br>
+                    <small class="muted" th:text="${m.seasonName} + (${m.stageLabel} != null ? ' - ' + ${m.stageLabel} : '')">Season</small></td>
+                <td th:text="${#temporals.format(m.date, 'EEE d MMM, HH:mm')}">date</td>
+                <td><span class="badge" th:text="${m.statusLabel}">Scheduled</span></td>
+                <td th:text="${m.resultSummary != null} ? ${m.resultSummary} : '-'">-</td>
+                <td class="actions">
+                    <details th:if="${m.status.name() != 'CANCELLED'}"><summary>Result</summary>
+                        <form class="form" th:action="@{/society-admin/matches/{id}/result(id=${m.id})}" method="post">
+                            <input type="hidden" name="season" th:value="${console.selectedSeasonId}">
+                            <p class="muted">Overs use cricket notation: 9.3 means 9 overs and 3 balls. The winner is worked out from the runs.</p>
+                            <div class="form-grid">
+                                <label th:text="${m.teamA} + ' runs'">A runs <input type="number" name="teamARuns" min="0" th:value="${m.teamARuns}" required></label>
+                                <label>Wickets <input type="number" name="teamAWickets" min="0" max="10" th:value="${m.teamAWickets}" required></label>
+                                <label>Overs <input type="number" name="teamAOvers" min="0" step="0.1" th:value="${m.teamAOvers}" required></label>
+                                <label th:text="${m.teamB} + ' runs'">B runs <input type="number" name="teamBRuns" min="0" th:value="${m.teamBRuns}" required></label>
+                                <label>Wickets <input type="number" name="teamBWickets" min="0" max="10" th:value="${m.teamBWickets}" required></label>
+                                <label>Overs <input type="number" name="teamBOvers" min="0" step="0.1" th:value="${m.teamBOvers}" required></label>
+                                <label class="span-2">Summary (optional) <input type="text" name="resultSummary" maxlength="300" th:value="${m.resultSummary}"></label>
+                            </div>
+                            <button class="btn btn-small" type="submit">Save result</button></form></details>
+                    <details th:if="${m.status.name() != 'COMPLETED'}"><summary>Reschedule</summary>
+                        <form class="form" th:action="@{/society-admin/matches/{id}(id=${m.id})}" method="post">
+                            <div th:replace="~{fragments/admin-forms :: matchFields(${m})}"></div>
+                            <button class="btn btn-small" type="submit">Save</button></form></details>
+                    <form class="inline" th:if="${m.status.name() != 'COMPLETED' and m.status.name() != 'CANCELLED'}"
+                          th:action="@{/society-admin/matches/{id}/cancel(id=${m.id})}" method="post" data-confirm="Cancel this match?">
+                        <input type="hidden" name="season" th:value="${console.selectedSeasonId}">
+                        <button class="btn btn-small btn-secondary" type="submit">Cancel</button></form>
+                    <form class="inline" th:action="@{/society-admin/matches/{id}/delete(id=${m.id})}" method="post"
+                          data-confirm="Delete this match? Its result is removed from the points table.">
+                        <input type="hidden" name="season" th:value="${console.selectedSeasonId}">
+                        <button class="btn btn-small btn-danger" type="submit">Delete</button></form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(console.matches)}"><td colspan="5" class="muted">No matches yet.</td></tr>
+            </tbody></table></div>
+    </section>
+
+    <!-- ===================== Sponsors ===================== -->
+    <section class="tab-panel" data-panel="sponsors" id="sponsors">
+        <h2>Sponsors</h2>
+        <details class="card"><summary>New sponsor</summary>
+            <form class="form" th:action="@{/society-admin/sponsors}" method="post">
+                <div th:replace="~{fragments/admin-forms :: sponsorFields(null)}"></div>
+                <button class="btn" type="submit">Add sponsor</button></form></details>
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Sponsor</th><th>Tier</th><th>Amount</th><th>Season</th><th>Public</th><th>Actions</th></tr></thead>
+            <tbody>
+            <tr th:each="s : ${console.sponsors}">
+                <td><strong th:text="${s.name}">Sponsor</strong></td>
+                <td th:text="${s.tierLabel != null} ? ${s.tierLabel} : '-'">Gold</td>
+                <td><span th:replace="~{fragments/admin-layout :: money(${s.amount})}"></span> <small class="muted">(private)</small></td>
+                <td th:text="${s.seasonName != null} ? ${s.seasonName} : 'All'">Season</td>
+                <td th:text="${s.active} ? 'Yes' : 'No'">Yes</td>
+                <td class="actions">
+                    <details><summary>Edit</summary>
+                        <form class="form" th:action="@{/society-admin/sponsors/{id}(id=${s.id})}" method="post">
+                            <div th:replace="~{fragments/admin-forms :: sponsorFields(${s})}"></div>
+                            <button class="btn btn-small" type="submit">Save</button></form></details>
+                    <form class="inline" th:action="@{/society-admin/sponsors/{id}/delete(id=${s.id})}" method="post" data-confirm="Delete this sponsor?">
+                        <button class="btn btn-small btn-danger" type="submit">Delete</button></form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(console.sponsors)}"><td colspan="6" class="muted">No sponsors yet.</td></tr>
+            </tbody></table></div>
+    </section>
+
+    <!-- ===================== Awards ===================== -->
+    <section class="tab-panel" data-panel="awards" id="awards">
+        <h2>Awards</h2>
+        <details class="card"><summary>New award</summary>
+            <form class="form" th:action="@{/society-admin/awards}" method="post">
+                <p class="muted">Choose the winning player, the winning team, or both.</p>
+                <div th:replace="~{fragments/admin-forms :: awardFields(null)}"></div>
+                <button class="btn" type="submit">Add award</button></form></details>
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Award</th><th>Winner</th><th>Season</th><th>Actions</th></tr></thead>
+            <tbody>
+            <tr th:each="a : ${console.awards}">
+                <td><strong th:text="${a.title}">Award</strong><br><small class="muted" th:text="${a.categoryLabel}">Category</small></td>
+                <td th:text="${a.playerName != null} ? ${a.playerName} : ${a.teamName}">Winner</td>
+                <td th:text="${a.seasonName != null} ? ${a.seasonName} : '-'">Season</td>
+                <td class="actions">
+                    <details><summary>Edit</summary>
+                        <form class="form" th:action="@{/society-admin/awards/{id}(id=${a.id})}" method="post">
+                            <div th:replace="~{fragments/admin-forms :: awardFields(${a})}"></div>
+                            <button class="btn btn-small" type="submit">Save</button></form></details>
+                    <form class="inline" th:action="@{/society-admin/awards/{id}/delete(id=${a.id})}" method="post" data-confirm="Delete this award?">
+                        <button class="btn btn-small btn-danger" type="submit">Delete</button></form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(console.awards)}"><td colspan="4" class="muted">No awards yet.</td></tr>
+            </tbody></table></div>
+    </section>
+
+    <!-- ===================== Gallery ===================== -->
+    <section class="tab-panel" data-panel="gallery" id="gallery">
+        <h2>Gallery</h2>
+        <details class="card"><summary>Add an image</summary>
+            <form class="form" th:action="@{/society-admin/gallery}" method="post">
+                <div th:replace="~{fragments/admin-forms :: galleryFields(null)}"></div>
+                <button class="btn" type="submit">Add image</button></form></details>
+        <div class="grid grid-4">
+            <figure class="card" th:each="g : ${console.gallery}">
+                <img th:src="@{${g.imageUrl}}" th:alt="${g.title != null} ? ${g.title} : 'Society photo'" loading="lazy">
+                <figcaption><span th:text="${g.title}">Title</span> <small class="muted" th:text="${g.caption}">Caption</small></figcaption>
+                <details><summary>Edit</summary>
+                    <form class="form" th:action="@{/society-admin/gallery/{id}(id=${g.id})}" method="post">
+                        <div th:replace="~{fragments/admin-forms :: galleryFields(${g})}"></div>
+                        <button class="btn btn-small" type="submit">Save</button></form></details>
+                <form class="inline" th:action="@{/society-admin/gallery/{id}/delete(id=${g.id})}" method="post" data-confirm="Delete this image?">
+                    <button class="btn btn-small btn-danger" type="submit">Delete</button></form>
+            </figure>
+        </div>
+        <p class="muted" th:if="${#lists.isEmpty(console.gallery)}">No images yet.</p>
+    </section>
+
+    <!-- ===================== Settings ===================== -->
+    <section class="tab-panel" data-panel="settings" id="settings">
+        <h2>Society settings</h2>
+        <form class="card form" th:action="@{/society-admin/settings}" method="post">
+            <div class="form-grid">
+                <label>Name <input type="text" name="name" th:value="${details.name}" maxlength="120" required></label>
+                <label>Address on the web: /society/
+                    <input type="text" name="slug" th:value="${details.slug}" maxlength="60" pattern="[a-z0-9\-]*"></label>
+                <label>City <input type="text" name="city" th:value="${details.city}" maxlength="80"></label>
+                <label>Address <input type="text" name="address" th:value="${details.address}" maxlength="300"></label>
+                <label>Contact email <input type="email" name="contactEmail" th:value="${details.contactEmail}" maxlength="200"></label>
+                <label>Contact phone <input type="tel" name="contactPhone" th:value="${details.contactPhone}" maxlength="30"></label>
+                <label class="span-2">About <textarea name="description" rows="3" maxlength="1000" th:text="${details.description}"></textarea></label>
+            </div>
+            <p class="muted">Changing the web address breaks old links to your public pages.</p>
+            <button class="btn" type="submit">Save settings</button>
+        </form>
+    </section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

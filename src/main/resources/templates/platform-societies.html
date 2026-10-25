@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Societies')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Societies</h1>
+    <nav th:replace="~{fragments/admin-layout :: platformNav('societies')}"></nav>
+
+    <div class="table-wrap"><table class="table">
+        <thead><tr><th>Society</th><th>Status</th><th>Admins</th><th>Plan</th><th>Teams</th><th>Players</th><th>Created</th><th></th></tr></thead>
+        <tbody>
+        <tr th:each="s : ${societies}">
+            <td><strong th:text="${s.name}">Society</strong><br><small class="muted" th:text="${s.city}">City</small></td>
+            <td><span class="badge" th:text="${s.statusLabel}">Active</span></td>
+            <td th:text="${s.adminCount}">3</td>
+            <td th:text="${s.planLabel != null} ? ${s.planLabel} + ' (' + ${s.subscriptionStatusLabel} + ')' : '-'">Plan</td>
+            <td th:text="${s.teams}">0</td><td th:text="${s.players}">0</td>
+            <td th:text="${#temporals.format(s.createdAt, 'd MMM yyyy')}">date</td>
+            <td class="actions">
+                <form class="inline" th:if="${s.canActivate}" th:action="@{/platform-admin/societies/{id}/status(id=${s.id})}" method="post">
+                    <input type="hidden" name="action" value="ACTIVATE">
+                    <button class="btn btn-small" type="submit" th:text="${s.status.name() == 'SUSPENDED'} ? 'Reactivate' : 'Activate'">Activate</button></form>
+                <small class="muted" th:if="${!s.canActivate and s.status.name() != 'ACTIVE'}">Needs 3+ admins</small>
+                <form class="inline" th:if="${s.status.name() == 'ACTIVE'}" th:action="@{/platform-admin/societies/{id}/status(id=${s.id})}" method="post"
+                      data-confirm="Suspend this society? Its public pages are hidden and it becomes read-only.">
+                    <input type="hidden" name="action" value="SUSPEND">
+                    <button class="btn btn-small btn-danger" type="submit">Suspend</button></form>
+                <a class="btn btn-small btn-secondary" th:if="${s.status.name() == 'ACTIVE'}" th:href="@{/society/{s}(s=${s.slug})}">View</a>
+            </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(societies)}"><td colspan="8" class="muted">No societies yet.</td></tr>
+        </tbody></table></div>
+
+    <details class="card"><summary>Create a society</summary>
+        <form class="form" th:action="@{/platform-admin/societies}" th:object="${form}" method="post" novalidate>
+            <p class="muted">A society needs at least 3 founding admins, so it can never exist below the activation minimum. A 14-day trial starts immediately.</p>
+            <div class="form-grid">
+                <label>Name <input type="text" th:field="*{name}" maxlength="120" required></label>
+                <label>Web address (optional) /society/ <input type="text" th:field="*{slug}" maxlength="60" pattern="[a-z0-9\-]*"></label>
+                <label>City <input type="text" th:field="*{city}" maxlength="80"></label>
+                <label>Address <input type="text" th:field="*{address}" maxlength="300"></label>
+                <label>Contact email <input type="email" th:field="*{contactEmail}" maxlength="200"></label>
+                <label>Contact phone <input type="tel" th:field="*{contactPhone}" maxlength="30"></label>
+                <label class="span-2">About <textarea th:field="*{description}" rows="2" maxlength="1000"></textarea></label>
+                <label class="check"><input type="checkbox" th:field="*{activateNow}"> Activate immediately</label>
+            </div>
+            <fieldset class="admin-block" th:each="a, st : *{admins}">
+                <legend th:text="'Admin ' + ${st.count}">Admin 1</legend>
+                <div class="form-grid">
+                    <label>Username <input type="text" th:field="*{admins[__${st.index}__].username}" maxlength="40" autocomplete="off" required></label>
+                    <label>Full name <input type="text" th:field="*{admins[__${st.index}__].fullName}" maxlength="120"></label>
+                    <label>Email <input type="email" th:field="*{admins[__${st.index}__].email}" maxlength="200" autocomplete="off" required></label>
+                    <label>Phone <input type="tel" th:field="*{admins[__${st.index}__].phone}" maxlength="30"></label>
+                    <label>Password (10+ characters) <input type="password" th:field="*{admins[__${st.index}__].password}" minlength="10" maxlength="72" autocomplete="new-password" required></label>
+                </div>
+            </fieldset>
+            <button class="btn" type="submit">Create society</button>
+        </form></details>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

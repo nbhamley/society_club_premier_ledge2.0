@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Tournaments')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Cross-society tournaments</h1>
+    <nav th:replace="~{fragments/admin-layout :: platformNav('tournaments')}"></nav>
+    <p class="muted">A society takes part only after its own admin team approves. The roster shows names, roles and statistics only.</p>
+
+    <article class="card" th:each="t : ${tournaments}">
+        <h3><span th:text="${t.name}">Tournament</span> <span class="badge" th:text="${t.statusLabel}">Proposed</span></h3>
+        <p class="muted">Hosted by <strong th:text="${t.hostSocietyName}">Host</strong>
+            <span th:if="${t.startDate}" th:text="'&middot; ' + ${#temporals.format(t.startDate, 'd MMM yyyy')} + (${t.endDate} != null ? ' - ' + ${#temporals.format(t.endDate, 'd MMM yyyy')} : '')"></span></p>
+        <p th:if="${t.description}" th:text="${t.description}">About</p>
+        <ul class="plain">
+            <li th:each="p : ${t.participants}"><span th:text="${p.name}">Society</span>
+                <span class="chip" th:if="${p.host}">host</span>
+                <span class="badge" th:text="${p.accepted} ? 'Accepted' : 'Waiting'">Waiting</span></li>
+        </ul>
+        <p class="actions">
+            <a class="btn btn-small btn-secondary" th:href="@{/platform-admin/tournaments(roster=${t.id})}">View roster</a>
+        <form class="inline" th:if="${t.status.name() != 'COMPLETED' and t.status.name() != 'CANCELLED'}"
+              th:action="@{/platform-admin/tournaments/{id}/cancel(id=${t.id})}" method="post" data-confirm="Cancel this tournament for every society?">
+            <button class="btn btn-small btn-danger" type="submit">Cancel tournament</button></form>
+        </p>
+    </article>
+    <p class="muted" th:if="${#lists.isEmpty(tournaments)}">No tournaments yet.</p>
+
+    <section class="section" th:if="${roster != null}">
+        <h2>Roster &ndash; tournament #<span th:text="${rosterTournamentId}">1</span></h2>
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Society</th><th>Player</th><th>Role</th><th>Matches</th><th>Runs</th><th>Wickets</th></tr></thead>
+            <tbody>
+            <tr th:each="r : ${roster}">
+                <td th:text="${r.societyName}">Society</td><td th:text="${r.playerName}">Player</td><td th:text="${r.roleLabel}">Role</td>
+                <td th:text="${r.matchesPlayed}">0</td><td th:text="${r.runs}">0</td><td th:text="${r.wickets}">0</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(roster)}"><td colspan="6" class="muted">No accepted societies yet.</td></tr>
+            </tbody></table></div>
+    </section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

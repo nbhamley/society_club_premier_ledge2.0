@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!-- Every public and account page includes: head(title), header, flash, footer. -->
+<head th:fragment="head(pageTitle)">
+    <th:block th:replace="~{fragments/layout :: base}"></th:block>
+    <title th:text="${pageTitle} + ' | SCPL'">SCPL</title>
+</head>
+<body>
+
+<!-- Shared head content. admin.js reads the CSRF values from these meta tags for fetch() calls. -->
+<th:block th:fragment="base">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</th:block>
+
+<header class="site-header" th:fragment="header">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="container bar">
+        <a class="brand" th:href="@{/}">&#127951; SCPL</a>
+        <nav class="main-nav" aria-label="Main">
+            <a th:href="@{/}">Home</a>
+            <a th:href="@{/about}">About</a>
+            <a th:href="@{/subscribe}">Pricing</a>
+            <th:block th:if="${nav != null}">
+                <a th:href="@{/dashboard}">Dashboard</a>
+                <a th:if="${nav.societyAdmin}" th:href="@{/society-admin}">Admin console</a>
+                <a th:if="${nav.societyAdmin}" th:href="@{/society-admin/approvals}">Approvals
+                    <span class="badge" th:if="${nav.pendingVotes > 0}" th:text="${nav.pendingVotes}">2</span></a>
+                <a th:if="${nav.platformAdmin}" th:href="@{/platform-admin}">Platform admin</a>
+                <a th:if="${nav.societySlug != null}" th:href="@{/society/{s}(s=${nav.societySlug})}" th:text="${nav.societyName}">My society</a>
+                <a th:if="${nav.societySlug != null}" th:href="@{/me/player}">My player</a>
+                <a th:if="${nav.societySlug != null}" th:href="@{/me/team}">My team</a>
+            </th:block>
+        </nav>
+        <div class="user-area">
+            <th:block th:if="${nav != null}">
+                <span class="chip" th:if="${nav.playingAs != null}">Playing as: <b th:text="${nav.playingAs}">Player</b></span>
+                <a class="chip chip-cta" th:if="${nav.canRegisterAsPlayer and nav.societySlug != null}"
+                   th:href="@{/society/{s}/register(s=${nav.societySlug})}">Register as a player</a>
+                <a class="bell" th:href="@{/notifications}" aria-label="Notifications">&#128276;
+                    <span class="badge" th:if="${nav.unreadNotifications > 0}" th:text="${nav.unreadNotifications}">3</span></a>
+                <a th:href="@{/profile}" th:text="${nav.displayName}">Name</a>
+                <small class="muted" th:text="${nav.roleLabel}">Role</small>
+                <form class="inline" th:action="@{/logout}" method="post">
+                    <button type="submit" class="link-btn">Sign out</button>
+                </form>
+            </th:block>
+            <th:block th:if="${nav == null}">
+                <a th:href="@{/login}">Sign in</a>
+                <a class="btn btn-small" th:href="@{/subscribe}">Start free trial</a>
+            </th:block>
+        </div>
+    </div>
+</header>
+
+<div class="flash-area container" th:fragment="flash">
+    <div class="flash flash-ok" role="status" th:if="${flashSuccess}" th:text="${flashSuccess}">Saved.</div>
+    <div class="flash flash-err" role="alert" th:if="${flashError}" th:text="${flashError}">Something went wrong.</div>
+</div>
+
+<!-- Include inside a th:object form: lists every validation problem in one place. -->
+<ul class="field-errors" role="alert" th:fragment="formErrors" th:if="${#fields.hasErrors('*')}">
+    <li th:each="e : ${#fields.detailedErrors()}" th:text="${e.message}">is invalid</li>
+</ul>
+
+<footer class="site-footer" th:fragment="footer">
+    <div class="container">
+        <p>&copy; Society Club Premier League &middot;
+            <a th:href="@{/about}">About</a> &middot; <a th:href="@{/subscribe}">Pricing</a> &middot; <a th:href="@{/login}">Sign in</a></p>
+    </div>
+    <script th:src="@{/js/admin.js}" defer></script>
+</footer>
+
+<!-- Pricing matrix (built from PlanCatalog, so prices live in one place). -->
+<div class="grid grid-4 pricing" th:fragment="pricing(plans)">
+    <article class="card plan" th:each="p : ${plans}">
+        <h3 th:text="${p.label}">Plan</h3>
+        <p class="price">
+            <span th:if="${p.monthlyCost == 0}">Free</span>
+            <span th:if="${p.monthlyCost > 0}">&#8377;<span th:text="${#numbers.formatDecimal(p.monthlyCost, 1, 'COMMA', 0, 'POINT')}">499</span><small>/month</small></span>
+        </p>
+        <ul class="plain"><li th:each="f : ${p.features}" th:text="${f}">Feature</li></ul>
+        <a class="btn" th:if="${p.monthlyCost == 0}" th:href="@{/subscribe}">Start free trial</a>
+        <a class="btn" th:if="${p.monthlyCost > 0}" th:href="@{/subscribe(plan=${p.plan})}" th:text="'Choose ' + ${p.label}">Choose</a>
+    </article>
+</div>
+
+<!-- Points table. Rows are StandingRow records. -->
+<div class="table-wrap" th:fragment="standings(rows)">
+    <table class="table">
+        <caption class="sr-only">Points table</caption>
+        <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>L</th><th>T</th><th>Pts</th><th>NRR</th></tr></thead>
+        <tbody>
+        <tr th:each="r, st : ${rows}">
+            <td th:text="${st.count}">1</td>
+            <td><span class="dot" th:style="${r.color != null} ? 'background:' + ${r.color}"></span>
+                <span th:text="${r.teamName}">Team</span></td>
+            <td th:text="${r.played}">0</td><td th:text="${r.won}">0</td><td th:text="${r.lost}">0</td>
+            <td th:text="${r.tied}">0</td><td><strong th:text="${r.points}">0</strong></td>
+            <td th:text="${#numbers.formatDecimal(r.netRunRate, 1, 2)}">0.00</td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(rows)}"><td colspan="8" class="muted">No teams yet.</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- One fixture or result. link=false on the match page itself. -->
+<article class="card match-card" th:fragment="matchCard(m, link)">
+    <p class="match-meta muted">
+        <span th:if="${m.stageLabel}" th:text="${m.stageLabel}">League</span>
+        <span th:if="${m.date}" th:text="'&middot; ' + ${#temporals.format(m.date, 'EEE d MMM yyyy, HH:mm')}">date</span>
+        <span th:if="${m.venue}" th:text="'&middot; ' + ${m.venue}">venue</span>
+        <span class="badge" th:text="${m.statusLabel}">Scheduled</span>
+    </p>
+    <div class="match-teams">
+        <p class="team-line">
+            <span class="dot" th:style="${m.teamAColor != null} ? 'background:' + ${m.teamAColor}"></span>
+            <strong th:text="${m.teamA}">Team A</strong>
+            <span class="score" th:if="${m.teamARuns != null}"
+                  th:text="${m.teamARuns} + '/' + ${m.teamAWickets} + ' (' + ${#numbers.formatDecimal(m.teamAOvers, 1, 1)} + ' ov)'">100/3</span>
+        </p>
+        <p class="team-line">
+            <span class="dot" th:style="${m.teamBColor != null} ? 'background:' + ${m.teamBColor}"></span>
+            <strong th:text="${m.teamB}">Team B</strong>
+            <span class="score" th:if="${m.teamBRuns != null}"
+                  th:text="${m.teamBRuns} + '/' + ${m.teamBWickets} + ' (' + ${#numbers.formatDecimal(m.teamBOvers, 1, 1)} + ' ov)'">90/5</span>
+        </p>
+    </div>
+    <p class="result" th:if="${m.resultSummary}" th:text="${m.resultSummary}">Result</p>
+    <a th:if="${link}" th:href="@{/matches/{id}(id=${m.id})}">Match details</a>
+</article>
+
+<!-- Tab bar for the public society pages. active: home | matches | seasons | players -->
+<nav class="tabs" th:fragment="societyNav(name, slug, active)" aria-label="Society pages">
+    <a th:href="@{/society/{s}(s=${slug})}" th:classappend="${active == 'home'} ? 'active'">Home</a>
+    <a th:href="@{/society/{s}/matches(s=${slug})}" th:classappend="${active == 'matches'} ? 'active'">Matches</a>
+    <a th:href="@{/society/{s}/seasons(s=${slug})}" th:classappend="${active == 'seasons'} ? 'active'">Seasons</a>
+    <a th:href="@{/society/{s}/players(s=${slug})}" th:classappend="${active == 'players'} ? 'active'">Players</a>
+    <a th:href="@{/society/{s}/register(s=${slug})}" th:classappend="${active == 'register'} ? 'active'">Register</a>
+</nav>
+
+</body>
+</html>

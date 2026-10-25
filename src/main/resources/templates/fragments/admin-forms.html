@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Field sets shared by the create and edit forms. Pass null for "new" and the row for "edit": values use ?. so
+  both work. Field names equal the request-record component names (SeasonRequest, TeamRequest, PlayerRequest,
+  MatchRequest, SponsorForm, AwardRequest, GalleryRequest, VendorForm, BillRequest).
+  Fragments read the page's own model (console, vendors, seasons), so they only work on the pages that provide it.
+-->
+
+<div class="form-grid" th:fragment="seasonFields(s)">
+    <label>Name <input type="text" name="name" th:value="${s?.name}" maxlength="120" required></label>
+    <label>Year <input type="number" name="year" th:value="${s?.year}" min="2000" max="2100"></label>
+    <label>Start date <input type="date" name="startDate" th:value="${s?.startDate}"></label>
+    <label>End date <input type="date" name="endDate" th:value="${s?.endDate}"></label>
+    <label>Overs per match <input type="number" name="oversPerMatch" min="1" max="50"
+                                  th:value="${s != null} ? ${s.oversPerMatch} : 10"></label>
+    <label>Team purse (&#8377;) <input type="number" name="teamPurse" min="0" step="any" th:value="${s?.teamPurse}"></label>
+    <label>Planned budget (&#8377;) <input type="number" name="plannedBudget" min="0" step="any" th:value="${s?.plannedBudget}"></label>
+    <label class="span-2">Description <textarea name="description" rows="2" maxlength="1000" th:text="${s?.description}"></textarea></label>
+</div>
+
+<div class="form-grid" th:fragment="teamFields(t)">
+    <label>Name <input type="text" name="name" th:value="${t?.name}" maxlength="80" required></label>
+    <label>Short name <input type="text" name="shortName" th:value="${t?.shortName}" maxlength="10"></label>
+    <label>Colour <input type="color" name="color" th:value="${t?.color != null} ? ${t.color} : '#1e88e5'"></label>
+    <label>Logo URL <input type="url" name="logoUrl" th:value="${t?.logoUrl}" maxlength="300" placeholder="https://..."></label>
+</div>
+
+<div class="form-grid" th:fragment="playerFields(p)">
+    <label>Name <input type="text" name="name" th:value="${p?.name}" maxlength="120" required></label>
+    <label>Email <input type="email" name="email" th:value="${p?.email}" maxlength="200"></label>
+    <label>Phone <input type="tel" name="phone" th:value="${p?.phone}" maxlength="30"></label>
+    <label>Date of birth <input type="date" name="dateOfBirth" th:value="${p?.dateOfBirth}"></label>
+    <label>Flat <input type="text" name="flatNumber" th:value="${p?.flatNumber}" maxlength="20"></label>
+    <label>Address <input type="text" name="address" th:value="${p?.address}" maxlength="300"></label>
+    <label>Role
+        <select name="role"><option value="">-</option>
+            <option th:each="r : ${T(com.scpl.model.PlayerRole).values()}" th:value="${r}" th:text="${r.label}"
+                    th:selected="${p?.role == r}">Batsman</option></select></label>
+    <label>Batting
+        <select name="battingStyle"><option value="">-</option>
+            <option th:each="b : ${T(com.scpl.model.BattingStyle).values()}" th:value="${b}" th:text="${b.label}"
+                    th:selected="${p?.battingStyle == b}">Right-hand bat</option></select></label>
+    <label>Bowling
+        <select name="bowlingStyle"><option value="">-</option>
+            <option th:each="b : ${T(com.scpl.model.BowlingStyle).values()}" th:value="${b}" th:text="${b.label}"
+                    th:selected="${p?.bowlingStyle == b}">Does not bowl</option></select></label>
+    <label>Jersey no. <input type="number" name="jerseyNumber" th:value="${p?.jerseyNumber}" min="0" max="999"></label>
+    <label>Base price (&#8377;) <input type="number" name="basePrice" th:value="${p?.basePrice}" min="0" step="any"></label>
+    <label>Photo URL <input type="url" name="photoUrl" th:value="${p?.photoUrl}" maxlength="300" placeholder="https://..."></label>
+    <label>Team
+        <select name="teamId"><option value="">No team</option>
+            <option th:each="t : ${console.teams}" th:value="${t.id}" th:text="${t.name} + ' (' + ${t.seasonName} + ')'"
+                    th:selected="${p?.teamId == t.id}">Team</option></select></label>
+</div>
+
+<div class="form-grid" th:fragment="matchFields(m)">
+    <label>Season
+        <select name="seasonId" required>
+            <option th:each="s : ${console.seasons}" th:value="${s.id}" th:text="${s.name}"
+                    th:selected="${s.id == (m != null ? m.seasonId : console.selectedSeasonId)}">Season</option></select></label>
+    <label>Team A
+        <select name="teamAId" required>
+            <option th:each="t : ${console.teams}" th:value="${t.id}" th:text="${t.name} + ' (' + ${t.seasonName} + ')'"
+                    th:selected="${m?.teamAId == t.id}">Team</option></select></label>
+    <label>Team B
+        <select name="teamBId" required>
+            <option th:each="t : ${console.teams}" th:value="${t.id}" th:text="${t.name} + ' (' + ${t.seasonName} + ')'"
+                    th:selected="${m?.teamBId == t.id}">Team</option></select></label>
+    <label>Date and time
+        <input type="datetime-local" name="matchDate"
+               th:value="${m?.date != null} ? ${#temporals.format(m.date, 'yyyy-MM-dd')} + 'T' + ${#temporals.format(m.date, 'HH:mm')}"></label>
+    <label>Venue <input type="text" name="venue" th:value="${m?.venue}" maxlength="150"></label>
+    <label>Stage
+        <select name="stage">
+            <option th:each="g : ${T(com.scpl.model.MatchStage).values()}" th:value="${g}" th:text="${g.label}"
+                    th:selected="${m?.stage == g}">League</option></select></label>
+</div>
+
+<div class="form-grid" th:fragment="sponsorFields(s)">
+    <label>Name <input type="text" name="name" th:value="${s?.name}" maxlength="160" required></label>
+    <label>Tier
+        <select name="tier"><option value="">-</option>
+            <option th:each="t : ${T(com.scpl.model.SponsorTier).values()}" th:value="${t}" th:text="${t.label}"
+                    th:selected="${s?.tier == t}">Gold</option></select></label>
+    <label>Amount (&#8377;) <input type="number" name="amount" th:value="${s?.amount}" min="0" step="any"></label>
+    <label>Season
+        <select name="seasonId"><option value="">All</option>
+            <option th:each="x : ${console.seasons}" th:value="${x.id}" th:text="${x.name}"
+                    th:selected="${s?.seasonId == x.id}">Season</option></select></label>
+    <label>Logo URL <input type="url" name="logoUrl" th:value="${s?.logoUrl}" maxlength="300" placeholder="https://..."></label>
+    <label>Website <input type="url" name="website" th:value="${s?.website}" maxlength="300" placeholder="https://..."></label>
+    <label class="check"><input type="hidden" name="_active" value="on">
+        <input type="checkbox" name="active" value="true" th:checked="${s == null or s.active}"> Shown publicly</label>
+</div>
+
+<div class="form-grid" th:fragment="awardFields(a)">
+    <label>Title <input type="text" name="title" th:value="${a?.title}" maxlength="160" required></label>
+    <label>Category
+        <select name="category"><option value="">-</option>
+            <option th:each="c : ${T(com.scpl.model.AwardCategory).values()}" th:value="${c}" th:text="${c.label}"
+                    th:selected="${a?.category == c}">Best batsman</option></select></label>
+    <label>Season
+        <select name="seasonId"><option value="">-</option>
+            <option th:each="x : ${console.seasons}" th:value="${x.id}" th:text="${x.name}"
+                    th:selected="${a?.seasonId == x.id}">Season</option></select></label>
+    <label>Player winner
+        <select name="playerId"><option value="">-</option>
+            <option th:each="p : ${console.players}" th:value="${p.id}" th:text="${p.name}"
+                    th:selected="${a?.playerId == p.id}">Player</option></select></label>
+    <label>Team winner
+        <select name="teamId"><option value="">-</option>
+            <option th:each="t : ${console.teams}" th:value="${t.id}" th:text="${t.name} + ' (' + ${t.seasonName} + ')'"
+                    th:selected="${a?.teamId == t.id}">Team</option></select></label>
+    <label>Image URL <input type="url" name="imageUrl" th:value="${a?.imageUrl}" maxlength="300" placeholder="https://..."></label>
+    <label class="span-2">Description <textarea name="description" rows="2" maxlength="500" th:text="${a?.description}"></textarea></label>
+</div>
+
+<div class="form-grid" th:fragment="galleryFields(g)">
+    <label>Image URL <input type="url" name="imageUrl" th:value="${g?.imageUrl}" maxlength="300" placeholder="https://..." required></label>
+    <label>Title <input type="text" name="title" th:value="${g?.title}" maxlength="150"></label>
+    <label>Caption <input type="text" name="caption" th:value="${g?.caption}" maxlength="300"></label>
+    <label>Season
+        <select name="seasonId"><option value="">-</option>
+            <option th:each="x : ${console.seasons}" th:value="${x.id}" th:text="${x.name}"
+                    th:selected="${g?.seasonId == x.id}">Season</option></select></label>
+</div>
+
+<!-- Vendors page. v is a VendorView or null. -->
+<div class="form-grid" th:fragment="vendorFields(v)">
+    <input type="hidden" name="id" th:if="${v != null}" th:value="${v.id}">
+    <label>Name <input type="text" name="name" th:value="${v?.name}" maxlength="160" required></label>
+    <label>Category
+        <select name="category">
+            <option th:each="c : ${T(com.scpl.model.VendorCategory).values()}" th:value="${c}" th:text="${c.label}"
+                    th:selected="${v?.category == c}">Venue</option></select></label>
+    <label>Contact person <input type="text" name="contactPerson" th:value="${v?.contactPerson}" maxlength="120"></label>
+    <label>Phone <input type="tel" name="phone" th:value="${v?.phone}" maxlength="30"></label>
+    <label>WhatsApp number <input type="tel" name="whatsappNumber" th:value="${v?.whatsappNumber}" maxlength="30"></label>
+    <label>Email <input type="email" name="email" th:value="${v?.email}" maxlength="200"></label>
+    <label>City <input type="text" name="city" th:value="${v?.city}" maxlength="80"></label>
+    <label>Website <input type="url" name="website" th:value="${v?.website}" maxlength="300" placeholder="https://..."></label>
+    <label>Rating (1-5) <input type="number" name="rating" th:value="${v?.rating}" min="1" max="5"></label>
+    <label>Address <input type="text" name="address" th:value="${v?.address}" maxlength="300"></label>
+    <label class="span-2">Notes <textarea name="notes" rows="2" maxlength="1000" th:text="${v?.notes}"></textarea></label>
+    <label class="check"><input type="hidden" name="_active" value="on">
+        <input type="checkbox" name="active" value="true" th:checked="${v == null or v.active}"> Active</label>
+</div>
+
+<!-- Bills page. b is a BillRow or null; reads the page's vendors and seasons. -->
+<div class="form-grid" th:fragment="billFields(b)">
+    <label>Vendor
+        <select name="vendorId" required>
+            <option th:each="v : ${vendors}" th:value="${v.id}" th:text="${v.name} + ' (' + ${v.categoryLabel} + ')'"
+                    th:selected="${b?.vendorId == v.id}">Vendor</option></select></label>
+    <label>Season
+        <select name="seasonId"><option value="">-</option>
+            <option th:each="s : ${seasons}" th:value="${s.id}" th:text="${s.name}"
+                    th:selected="${b != null ? b.seasonId == s.id : selectedSeasonId == s.id}">Season</option></select></label>
+    <label>Title <input type="text" name="title" th:value="${b?.title}" maxlength="160" required></label>
+    <label>Amount (&#8377;) <input type="number" name="amount" th:value="${b?.amount}" min="1" step="any" required></label>
+    <label>Bill date <input type="date" name="billDate" th:value="${b?.billDate}"></label>
+    <label>Attachment link <input type="url" name="attachmentUrl" th:value="${b?.attachmentUrl}" maxlength="300" placeholder="https://..."></label>
+    <label class="span-2">Description <textarea name="description" rows="2" maxlength="1000" th:text="${b?.description}"></textarea></label>
+</div>
+
+</body>
+</html>

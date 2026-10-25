@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Bills')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Bills and budget</h1>
+    <nav th:replace="~{fragments/admin-layout :: adminNav('bills')}"></nav>
+    <p class="muted">Bills are visible only to your society's admin team.</p>
+
+    <form class="toolbar" method="get" th:action="@{/society-admin/bills}">
+        <label>Season
+            <select name="season" data-autosubmit><option value="">All seasons</option>
+                <option th:each="s : ${seasons}" th:value="${s.id}" th:text="${s.name}" th:selected="${s.id == selectedSeasonId}">Season</option></select></label>
+        <button class="btn btn-small btn-secondary" type="submit">Show</button>
+    </form>
+
+    <section class="section">
+        <h2>Budget &ndash; <span th:text="${budget.seasonName}">All seasons</span></h2>
+        <div class="grid grid-4 kpis">
+            <div class="card stat"><span class="stat-num"><span th:replace="~{fragments/admin-layout :: money(${budget.plannedBudget})}"></span></span><span>Planned</span></div>
+            <div class="card stat"><span class="stat-num"><span th:replace="~{fragments/admin-layout :: money(${budget.totalSpend})}"></span></span><span>Billed</span></div>
+            <div class="card stat" th:classappend="${budget.remaining < 0} ? 'over'"><span class="stat-num"><span th:replace="~{fragments/admin-layout :: money(${budget.remaining})}"></span></span>
+                <span th:text="${budget.remaining < 0} ? 'Over budget' : 'Remaining'">Remaining</span></div>
+            <div class="card stat"><span class="stat-num"><span th:replace="~{fragments/admin-layout :: money(${budget.pending + budget.disputed})}"></span></span><span>Unpaid or disputed</span></div>
+        </div>
+        <p class="muted">Paid <span th:replace="~{fragments/admin-layout :: money(${budget.paid})}"></span> &middot;
+            Pending <span th:replace="~{fragments/admin-layout :: money(${budget.pending})}"></span> &middot;
+            Disputed <span th:replace="~{fragments/admin-layout :: money(${budget.disputed})}"></span>.
+            The plan is one figure per season, so categories are compared with each other, not with a per-category target.</p>
+
+        <div class="chart-box"><canvas data-chart="bar" data-chart-source="#budget-rows" height="140"
+                                       aria-label="Spend by category" role="img"></canvas></div>
+        <div class="table-wrap"><table class="table" id="budget-rows">
+            <caption class="sr-only">Spend by category</caption>
+            <thead><tr><th>Category</th><th>Billed</th><th>Share</th></tr></thead>
+            <tbody>
+            <tr th:each="c : ${budget.categories}" th:attr="data-label=${c.label},data-value=${c.total}">
+                <td th:text="${c.label}">Venue</td>
+                <td><span th:replace="~{fragments/admin-layout :: money(${c.total})}"></span></td>
+                <td th:text="${#numbers.formatDecimal(c.sharePercent, 1, 1)} + '%'">0%</td>
+            </tr>
+            </tbody></table></div>
+    </section>
+
+    <section class="section">
+        <h2>Bills</h2>
+        <details class="card"><summary>New bill</summary>
+            <p class="muted" th:if="${#lists.isEmpty(vendors)}">Add a vendor first on the <a th:href="@{/society-admin/vendors}">Vendors</a> page.</p>
+            <form class="form" th:unless="${#lists.isEmpty(vendors)}" th:action="@{/society-admin/bills}" method="post">
+                <div th:replace="~{fragments/admin-forms :: billFields(null)}"></div>
+                <button class="btn" type="submit">Add bill</button></form></details>
+
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Bill</th><th>Vendor</th><th>Season</th><th>Amount</th><th>Dated</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+            <tr th:each="b : ${bills}">
+                <td><strong th:text="${b.title}">Bill</strong>
+                    <a th:if="${b.attachmentUrl}" th:href="@{${b.attachmentUrl}}" target="_blank" rel="noopener noreferrer">attachment</a></td>
+                <td th:text="${b.vendorName}">Vendor</td>
+                <td th:text="${b.seasonName != null} ? ${b.seasonName} : '-'">Season</td>
+                <td><span th:replace="~{fragments/admin-layout :: money(${b.amount})}"></span></td>
+                <td th:text="${#temporals.format(b.billDate, 'd MMM yyyy')}">date</td>
+                <td><span class="badge" th:text="${b.statusLabel}">Pending</span>
+                    <small class="muted" th:if="${b.paidDate}" th:text="'paid ' + ${#temporals.format(b.paidDate, 'd MMM')}"></small></td>
+                <td class="actions">
+                    <form class="inline" th:action="@{/society-admin/bills/{id}/status(id=${b.id})}" method="post">
+                        <select name="status" aria-label="Bill status">
+                            <option th:each="st : ${opts.billStatuses}" th:value="${st}" th:text="${st.label}" th:selected="${st == b.status}">Pending</option></select>
+                        <button class="btn btn-small" type="submit">Set</button></form>
+                    <details><summary>Edit</summary>
+                        <form class="form" th:action="@{/society-admin/bills/{id}(id=${b.id})}" method="post">
+                            <div th:replace="~{fragments/admin-forms :: billFields(${b})}"></div>
+                            <button class="btn btn-small" type="submit">Save</button></form></details>
+                    <form class="inline" th:action="@{/society-admin/bills/{id}/delete(id=${b.id})}" method="post" data-confirm="Delete this bill?">
+                        <button class="btn btn-small btn-danger" type="submit">Delete</button></form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(bills)}"><td colspan="7" class="muted">No bills yet.</td></tr>
+            </tbody></table></div>
+    </section>
+</main>
+<!-- Chart.js is only needed here. It must load before admin.js (both deferred, so source order decides). -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

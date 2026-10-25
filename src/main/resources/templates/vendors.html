@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Vendors')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Vendors</h1>
+    <nav th:replace="~{fragments/admin-layout :: adminNav('vendors')}"></nav>
+    <p class="muted">Your society's own vendor directory. It is never shared with other societies.</p>
+
+    <details class="card"><summary>New vendor</summary>
+        <form class="form" th:action="@{/society-admin/vendors}" method="post">
+            <div th:replace="~{fragments/admin-forms :: vendorFields(null)}"></div>
+            <button class="btn" type="submit">Add vendor</button></form></details>
+
+    <form class="toolbar" method="get" th:action="@{/society-admin/vendors}">
+        <label>Category
+            <select name="category" data-autosubmit><option value="">All</option>
+                <option th:each="c : ${opts.vendorCategories}" th:value="${c}" th:text="${c.label}" th:selected="${c == category}">Venue</option></select></label>
+        <button class="btn btn-small btn-secondary" type="submit">Filter</button>
+    </form>
+
+    <div class="table-wrap"><table class="table">
+        <thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Rating</th><th>Billed so far</th><th>Reach out</th><th>Actions</th></tr></thead>
+        <tbody>
+        <tr th:each="v : ${vendors}" th:classappend="${!v.active} ? 'inactive'">
+            <td><strong th:text="${v.name}">Vendor</strong> <span class="badge" th:unless="${v.active}">Inactive</span><br>
+                <small class="muted" th:text="${v.city}">City</small></td>
+            <td th:text="${v.categoryLabel}">Venue</td>
+            <td><span th:text="${v.contactPerson}">Person</span><br><small class="muted" th:text="${v.phone}">phone</small></td>
+            <td th:text="${v.rating != null} ? ${v.rating} + ' / 5' : '-'">4 / 5</td>
+            <td><span th:replace="~{fragments/admin-layout :: money(${v.billTotal})}"></span></td>
+            <td class="actions">
+                <a class="btn btn-small" th:if="${v.whatsappLink}" th:href="${v.whatsappLink}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                <a class="btn btn-small btn-secondary" th:if="${v.callLink}" th:href="${v.callLink}">Call</a>
+                <a class="btn btn-small btn-secondary" th:if="${v.mailLink}" th:href="${v.mailLink}">Email</a>
+            </td>
+            <td class="actions">
+                <details><summary>Edit</summary>
+                    <form class="form" th:action="@{/society-admin/vendors}" method="post">
+                        <div th:replace="~{fragments/admin-forms :: vendorFields(${v})}"></div>
+                        <button class="btn btn-small" type="submit">Save</button></form></details>
+                <form class="inline" th:action="@{/society-admin/vendors/{id}/delete(id=${v.id})}" method="post"
+                      data-confirm="Delete this vendor? A vendor with bills can only be marked inactive.">
+                    <button class="btn btn-small btn-danger" type="submit">Delete</button></form>
+            </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(vendors)}"><td colspan="7" class="muted">No vendors yet.</td></tr>
+        </tbody></table></div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

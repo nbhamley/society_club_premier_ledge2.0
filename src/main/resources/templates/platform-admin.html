@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Platform admin')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Platform admin</h1>
+    <nav th:replace="~{fragments/admin-layout :: platformNav('overview')}"></nav>
+    <p class="muted">Totals and billing status only. Platform admins never see players' personal details.</p>
+
+    <div class="grid grid-4 kpis">
+        <div class="card stat"><span class="stat-num" th:text="${dash.stats.societies}">0</span>
+            <span th:text="${dash.stats.activeSocieties} + ' active, ' + ${dash.stats.draftSocieties} + ' draft, ' + ${dash.stats.suspendedSocieties} + ' suspended'">Societies</span></div>
+        <div class="card stat"><span class="stat-num" th:text="${dash.stats.teams}">0</span><span>Teams</span></div>
+        <div class="card stat"><span class="stat-num" th:text="${dash.stats.players}">0</span><span>Active players</span></div>
+        <div class="card stat"><span class="stat-num" th:text="${dash.stats.matches}">0</span><span>Matches</span></div>
+        <div class="card stat"><span class="stat-num"><span th:replace="~{fragments/admin-layout :: money(${dash.stats.monthlyRecurringRevenue})}"></span></span><span>Monthly recurring revenue</span></div>
+        <div class="card stat"><span class="stat-num" th:text="${dash.stats.active}">0</span>
+            <span th:text="'paying &middot; ' + ${dash.stats.trial} + ' trial &middot; ' + ${dash.stats.pastDue} + ' past due &middot; ' + ${dash.stats.cancelled} + ' cancelled'">Subscriptions</span></div>
+        <div class="card stat"><span class="stat-num" th:text="${dash.stats.openApprovals}">0</span><span>Open approvals (all societies)</span></div>
+        <div class="card stat"><span class="stat-num" th:text="${dash.stats.upcomingEvents}">0</span><span>Upcoming published events</span></div>
+    </div>
+
+    <section class="section">
+        <h2>Waiting for activation</h2>
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Society</th><th>Admins</th><th>Plan</th><th>Created</th><th></th></tr></thead>
+            <tbody>
+            <tr th:each="s : ${dash.awaitingActivation}">
+                <td><strong th:text="${s.name}">Society</strong> <small class="muted" th:text="'/society/' + ${s.slug}">/society/x</small></td>
+                <td th:text="${s.adminCount}">3</td>
+                <td th:text="${s.planLabel} + ' (' + ${s.subscriptionStatusLabel} + ')'">Plan</td>
+                <td th:text="${#temporals.format(s.createdAt, 'd MMM yyyy')}">date</td>
+                <td><form class="inline" th:if="${s.canActivate}" th:action="@{/platform-admin/societies/{id}/status(id=${s.id})}" method="post">
+                    <input type="hidden" name="action" value="ACTIVATE">
+                    <button class="btn btn-small" type="submit">Activate</button></form>
+                    <small class="muted" th:unless="${s.canActivate}">Needs at least 3 admins</small></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(dash.awaitingActivation)}"><td colspan="5" class="muted">Nothing waiting.</td></tr>
+            </tbody></table></div>
+    </section>
+
+    <section class="section">
+        <h2>Payment attention</h2>
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>Society</th><th>Plan</th><th>Status</th><th>Overdue since</th></tr></thead>
+            <tbody>
+            <tr th:each="s : ${dash.needAttention}">
+                <td th:text="${s.societyName}">Society</td><td th:text="${s.planLabel}">Plan</td>
+                <td><span class="badge" th:text="${s.statusLabel}">Past due</span></td>
+                <td th:text="${#temporals.format(s.pastDueSince, 'd MMM yyyy')}">date</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(dash.needAttention)}"><td colspan="4" class="muted">All subscriptions are in good standing.</td></tr>
+            </tbody></table></div>
+    </section>
+
+    <section class="section">
+        <h2>Recent activity</h2>
+        <ul class="plain">
+            <li th:each="r : ${dash.recent}"><span class="muted" th:text="${#temporals.format(r.timestamp, 'd MMM, HH:mm')}">time</span>
+                <code th:text="${r.action}">ACTION</code> <span th:text="${r.user}">user</span>
+                <small class="muted" th:if="${r.societyName}" th:text="'in ' + ${r.societyName}"></small></li>
+        </ul>
+        <p><a th:href="@{/platform-admin/audit}">Full audit log</a></p>
+    </section>
+
+    <section class="section">
+        <h2>Restore</h2>
+        <div class="grid grid-2">
+            <form class="card form" th:action="@{/platform-admin/restore}" th:object="${restoreForm}" method="post" enctype="multipart/form-data" novalidate>
+                <h3>Restore one society</h3>
+                <p class="muted">Upload a <code>.scplenc</code> society backup. It becomes a NEW draft society with a fresh trial; nothing is overwritten.
+                    Backups hold no logins, so enter the new society's admins (at least 3).</p>
+                <label>Backup file <input type="file" name="file" accept=".scplenc" required></label>
+                <label>New society name (optional) <input type="text" th:field="*{newName}" maxlength="120"></label>
+                <fieldset class="admin-block" th:each="a, st : *{admins}">
+                    <legend th:text="'Admin ' + ${st.count}">Admin 1</legend>
+                    <div class="form-grid">
+                        <label>Username <input type="text" th:field="*{admins[__${st.index}__].username}" maxlength="40" autocomplete="off" required></label>
+                        <label>Full name <input type="text" th:field="*{admins[__${st.index}__].fullName}" maxlength="120"></label>
+                        <label>Email <input type="email" th:field="*{admins[__${st.index}__].email}" maxlength="200" autocomplete="off" required></label>
+                        <label>Phone <input type="tel" th:field="*{admins[__${st.index}__].phone}" maxlength="30"></label>
+                        <label>Password (10+ characters) <input type="password" th:field="*{admins[__${st.index}__].password}" minlength="10" maxlength="72" autocomplete="new-password" required></label>
+                    </div>
+                </fieldset>
+                <button class="btn" type="submit">Restore as a new society</button>
+            </form>
+
+            <form class="card form" th:action="@{/platform-admin/restore/dump}" method="post" enctype="multipart/form-data">
+                <h3>Stage a full database dump</h3>
+                <p class="muted">Upload a nightly <code>.sqlite.gz</code> dump for a maintenance window. This only stores and checks the file:
+                    it is NOT applied while the app is running. See the README, &ldquo;Restoring&rdquo;.</p>
+                <label>Dump file <input type="file" name="file" accept=".gz" required></label>
+                <button class="btn btn-secondary" type="submit">Stage dump</button>
+                <h4>Staged dumps</h4>
+                <ul class="plain">
+                    <li th:each="d : ${dumps}"><code th:text="${d.fileName}">dump</code> <span th:text="${d.sizeLabel}">1 MB</span>
+                        <small class="muted" th:text="'SHA-256 ' + ${d.sha256}">sha</small></li>
+                </ul>
+                <p class="muted" th:if="${#lists.isEmpty(dumps)}">None staged.</p>
+            </form>
+        </div>
+    </section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

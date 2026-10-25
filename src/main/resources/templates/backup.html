@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Backups')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Backups</h1>
+    <nav th:replace="~{fragments/admin-layout :: adminNav('backup')}"></nav>
+
+    <div class="flash" th:if="${readOnly}">Your society is read-only, but you can still create and download backups of your data.</div>
+    <p>A backup is a single encrypted file (<code>.scplenc</code>) with all of your society's data. Only SCPL can open it:
+        a platform admin restores it into a <em>new</em> society. It does not include logins or payment details.
+        Backups are kept for 30 days.</p>
+
+    <form class="card form" th:action="@{/society-admin/backup}" method="post">
+        <button class="btn" type="submit">Create a backup now</button>
+        <small class="muted">Up to three per day.</small>
+    </form>
+
+    <div class="table-wrap"><table class="table">
+        <thead><tr><th>File</th><th>Size</th><th>Status</th><th>Created</th><th>Expires</th><th>Checksum (SHA-256)</th><th></th></tr></thead>
+        <tbody>
+        <tr th:each="b : ${backups}">
+            <td th:text="${b.fileName}">scpl_backup_1_20260101120000.scplenc</td>
+            <td th:text="${b.sizeLabel}">12 KB</td>
+            <td><span class="badge" th:text="${b.statusLabel}">Ready</span></td>
+            <td th:text="${#temporals.format(b.createdAt, 'd MMM yyyy, HH:mm')}">date</td>
+            <td th:text="${#temporals.format(b.expiresAt, 'd MMM yyyy')}">date</td>
+            <td><code th:text="${#strings.abbreviate(b.sha256, 18)}">abc123</code></td>
+            <td><a class="btn btn-small" th:if="${b.downloadable}" th:href="@{/society-admin/backup/{id}/download(id=${b.id})}">Download</a></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(backups)}"><td colspan="7" class="muted">No backups yet.</td></tr>
+        </tbody></table></div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

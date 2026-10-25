@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Approvals')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main" class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Approvals</h1>
+    <nav th:replace="~{fragments/admin-layout :: adminNav('approvals')}"></nav>
+    <p class="muted">Sensitive actions need votes from your society's other admins. The admin who raised an item cannot vote on it.
+        It is approved when enough approvals arrive, and rejected as soon as enough rejections make that impossible.</p>
+
+    <nav class="tabs" data-tabs aria-label="Approval views">
+        <a href="#pending" data-tab="pending">Pending
+            <span class="badge" th:if="${!#lists.isEmpty(page.pending)}" th:text="${#lists.size(page.pending)}">1</span></a>
+        <a href="#history" data-tab="history">History</a>
+        <a href="#audit" data-tab="audit">Audit log</a>
+    </nav>
+
+    <!-- A card per approval; the same markup is used for pending and decided items. -->
+    <section class="tab-panel" data-panel="pending" id="pending">
+        <h2>Waiting for votes</h2>
+        <article class="card approval" th:each="a : ${page.pending}">
+            <h3 th:text="${a.typeLabel}">Type</h3>
+            <p th:text="${a.notes}">Notes</p>
+            <p class="muted">Raised by <strong th:text="${a.requestedBy}">Admin</strong>
+                on <span th:text="${#temporals.format(a.requestedAt, 'd MMM yyyy, HH:mm')}">date</span>
+                <span th:if="${a.itemCount > 1}" th:text="'&middot; ' + ${a.itemCount} + ' items'"></span></p>
+            <p><span class="badge" th:text="${a.approveVotes} + ' of ' + ${a.required} + ' approvals'">0 of 2</span>
+                <span class="badge" th:text="${a.rejectVotes} + ' rejections'">0 rejections</span>
+                <small class="muted" th:text="'(' + ${a.eligible} + ' admins; the requester cannot vote)'"></small></p>
+            <ul class="plain" th:unless="${#lists.isEmpty(a.votes)}">
+                <li th:each="v : ${a.votes}"><strong th:text="${v.voter}">Admin</strong> <span th:text="${v.voteLabel}">Approve</span>
+                    <span class="muted" th:if="${v.comment}" th:text="'- ' + ${v.comment}">comment</span></li>
+            </ul>
+            <p class="muted" th:if="${a.mine}">You raised this, so you cannot vote on it.</p>
+            <p class="muted" th:if="${a.myVote != null}" th:text="'You voted: ' + ${a.myVote}">You voted</p>
+            <form class="form" th:if="${a.canVote}" th:action="@{/society-admin/approvals/{id}/vote(id=${a.id})}" method="post">
+                <label>Comment (optional) <input type="text" name="comment" maxlength="500"></label>
+                <button class="btn btn-small" type="submit" name="vote" value="APPROVE">Approve</button>
+                <button class="btn btn-small btn-danger" type="submit" name="vote" value="REJECT">Reject</button>
+            </form>
+            <form class="inline" th:if="${a.canWithdraw}" th:action="@{/society-admin/approvals/{id}/withdraw(id=${a.id})}" method="post"
+                  data-confirm="Withdraw this request?">
+                <button class="btn btn-small btn-secondary" type="submit">Withdraw</button></form>
+        </article>
+        <p class="muted" th:if="${#lists.isEmpty(page.pending)}">Nothing is waiting for votes.</p>
+    </section>
+
+    <section class="tab-panel" data-panel="history" id="history">
+        <h2>Decided</h2>
+        <article class="card approval" th:each="a : ${page.history}">
+            <h3><span th:text="${a.typeLabel}">Type</span> <span class="badge" th:text="${a.statusLabel}">Approved</span></h3>
+            <p th:text="${a.notes}">Notes</p>
+            <p class="muted">Raised by <span th:text="${a.requestedBy}">Admin</span> on
+                <span th:text="${#temporals.format(a.requestedAt, 'd MMM yyyy')}">date</span>; decided
+                <span th:text="${#temporals.format(a.decidedAt, 'd MMM yyyy, HH:mm')}">date</span>
+                <span th:if="${a.decisionNotes}" th:text="'(' + ${a.decisionNotes} + ')'"></span></p>
+            <ul class="plain" th:unless="${#lists.isEmpty(a.votes)}">
+                <li th:each="v : ${a.votes}"><strong th:text="${v.voter}">Admin</strong> <span th:text="${v.voteLabel}">Approve</span>
+                    <span class="muted" th:if="${v.comment}" th:text="'- ' + ${v.comment}">comment</span></li>
+            </ul>
+        </article>
+        <p class="muted" th:if="${#lists.isEmpty(page.history)}">No decisions yet.</p>
+    </section>
+
+    <section class="tab-panel" data-panel="audit" id="audit">
+        <h2>Audit log</h2>
+        <p class="muted">Every change made by an admin in your society. Platform admins can read this log too.</p>
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Item</th><th>Details</th></tr></thead>
+            <tbody>
+            <tr th:each="r : ${page.audit}">
+                <td th:text="${#temporals.format(r.timestamp, 'd MMM yyyy, HH:mm:ss')}">date</td>
+                <td th:text="${r.user}">Admin</td>
+                <td><code th:text="${r.action}">ACTION</code></td>
+                <td th:text="${r.entityType} + (${r.entityId} != null ? ' #' + ${r.entityId} : '')">TYPE #1</td>
+                <td><small class="muted" th:text="${r.detail}">details</small></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(page.audit)}"><td colspan="5" class="muted">Nothing recorded yet.</td></tr>
+            </tbody></table></div>
+        <p class="pager">
+            <a th:if="${page.auditPage > 0}" th:href="@{/society-admin/approvals(page=${page.auditPage - 1})}">&larr; Newer</a>
+            <span class="muted" th:text="'Page ' + ${page.auditPage + 1} + ' of ' + ${page.auditPages}">Page 1 of 1</span>
+            <a th:if="${page.auditPage + 1 < page.auditPages}" th:href="@{/society-admin/approvals(page=${page.auditPage + 1})}">Older &rarr;</a></p>
+    </section>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
