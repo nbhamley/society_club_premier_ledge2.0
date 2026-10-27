@@ -41,7 +41,7 @@ import java.util.Locale;
  * GET    /api/v1/imports/{id}/review.csv  review file download
  * GET    /api/v1/imports/{id}/failed.csv  failed-rows file download
  * POST   /api/v1/imports/{id}/review      replace the review file after offline edits (multipart "file")
- * PATCH  /api/v1/imports/{id}             {"action":"APPROVE"} raises the 3-of-N approval, {"action":"REJECT","reason":"..."}
+ * PATCH  /api/v1/imports/{id}             {"action":"APPROVE"} raises the admin approval, {"action":"REJECT","reason":"..."}
  * </pre>
  */
 @RestController

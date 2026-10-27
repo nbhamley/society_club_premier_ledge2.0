@@ -100,7 +100,7 @@ public class SeasonService {
         return s;
     }
 
-    /** Deleting a season cascades to teams, matches and lots, so it needs a 3-of-N approval. */
+    /** Deleting a season cascades to teams, matches and lots, so it needs an admin approval. */
     @Transactional
     public AdminApproval requestDelete(User actor, Long societyId, Long seasonId, String reason) {
         Tenancy.requireAdminOf(actor, societyId);

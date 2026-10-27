@@ -21,7 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.scpl.model.AdminApproval;
 
 /**
- * Bulk import UI (§9): upload, review.csv download, replace after offline edits, approve (raises the 3-of-N approval),
+ * Bulk import UI (§9): upload, review.csv download, replace after offline edits, approve (raises the admin approval),
  * reject. the 10 MB limit is enforced by ImportService and admin.js, not by Spring’s multipart settings, again inside ImportService before any parsing,
  * and in the browser by admin.js (which reads data-max-bytes from the form).
  */
@@ -99,11 +99,5 @@ public class ImportController {
         imports.reject(c.actor(), c.societyId(), id, reason);
         flash.addFlashAttribute(WebSupport.FLASH_SUCCESS, "Import rejected. Its files are deleted after the retention period.");
         return "redirect:/society-admin/import";
-    }
-
-    /** Flash text for an action that was sent to the admin team for a vote instead of being carried out. */
-    public static String approvalRaised(String what, AdminApproval a) {
-        return what + " It needs " + a.getApprovalsRequired() + " approval" + (a.getApprovalsRequired() == 1 ? "" : "s")
-                + " from the other admins before it takes effect. Track it under Approvals.";
     }
 }

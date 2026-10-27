@@ -22,10 +22,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
@@ -38,8 +40,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 /**
- * The 3-of-N engine in isolation (acceptance 7 and 8). Threshold = min(3, admins - 1): the requester can never vote,
- * so a 3-admin society needs 2 approvals; from 4 admins up it needs 3.
+ * The approval engine in isolation (acceptance 7 and 8). Adding an admin needs min(3, admins - 1) distinct approvals:
+ * the requester can never vote, so a 3-admin society needs 2 and from 4 admins up it needs 3. Every other type needs 1.
  */
 @ExtendWith(MockitoExtension.class)
 class AdminApprovalServiceTest {
@@ -131,18 +133,39 @@ class AdminApprovalServiceTest {
 
     @ParameterizedTest
     @CsvSource({"3,2", "4,3", "5,3", "10,3"})
-    void theThresholdNeverExceedsThePeopleWhoCanVote(int admins, int expectedRequired) {
+    void anAdminInviteNeedsThreeApprovals_cappedAtThePeopleWhoCanVote(int admins, int expectedRequired) {
         Society s = society(1, admins);
         User requester = admin(1, s);
         when(societies.findById(1L)).thenReturn(Optional.of(s));
         when(approvals.save(any(AdminApproval.class))).thenAnswer(i -> i.getArgument(0));
 
-        AdminApproval a = service.raise(requester, 1L, ApprovalEntityType.PLAYER_DROP, 5L, null, "Drop X", null);
+        AdminApproval a = service.raise(requester, 1L, ApprovalEntityType.ADMIN_INVITE, null, null, "Invite X", null);
 
         assertThat(a.getApprovalsRequired()).isEqualTo(expectedRequired);
         assertThat(a.getEligibleVoters()).isEqualTo(admins);
         assertThat(a.getStatus()).isEqualTo(ApprovalStatus.PENDING);
-        verify(notifications).notifyAdmins(eq(1L), eq(1L), anyString(), eq("Drop X"), anyString());
+        verify(notifications).notifyAdmins(eq(1L), eq(1L), anyString(), eq("Invite X"), anyString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {ApprovalEntityType.REGISTRATION, ApprovalEntityType.REGISTRATION_BATCH,
+            ApprovalEntityType.PLAYER_DROP, ApprovalEntityType.BULK_IMPORT, ApprovalEntityType.SEASON_DELETE,
+            ApprovalEntityType.ADMIN_REMOVE, ApprovalEntityType.TOURNAMENT_JOIN})
+    void everyOtherTypeNeedsASingleApproval_whateverTheSocietySize(String type) {
+        for (int admins : new int[]{2, 3, 4, 10}) {
+            assertThat(service.requiredApprovals(type, admins - 1)).as("%s with %d admins", type, admins).isEqualTo(1);
+        }
+        Society s = society(1, 5);
+        when(societies.findById(1L)).thenReturn(Optional.of(s));
+        when(approvals.save(any(AdminApproval.class))).thenAnswer(i -> i.getArgument(0));
+        assertThat(service.raise(admin(1, s), 1L, type, 5L, null, "x", null).getApprovalsRequired()).isEqualTo(1);
+    }
+
+    @Test
+    void theAdminInviteThresholdMustBePositive() {
+        PlatformTransactionManager tm = mock(PlatformTransactionManager.class);
+        assertThatThrownBy(() -> new AdminApprovalService(approvals, societies, users, registrations, notifications,
+                audit, publisher, tm, 0)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -192,7 +215,7 @@ class AdminApprovalServiceTest {
     void theRequesterCannotVoteOnTheirOwnApproval() {
         Society s = society(1, 4);
         User requester = admin(1, s);
-        AdminApproval a = pending(s, requester, 4, 3, ApprovalEntityType.PLAYER_DROP);
+        AdminApproval a = pending(s, requester, 4, 1, ApprovalEntityType.PLAYER_DROP);
         stubVoting(a, requester);
 
         assertThatThrownBy(() -> service.castVote(requester, APPROVAL_ID, Vote.APPROVE, null))
@@ -205,7 +228,7 @@ class AdminApprovalServiceTest {
         Society s = society(1, 4);
         User a1 = admin(1, s);
         User a2 = admin(2, s);
-        AdminApproval a = pending(s, a1, 4, 3, ApprovalEntityType.PLAYER_DROP);
+        AdminApproval a = pending(s, a1, 4, 3, ApprovalEntityType.ADMIN_INVITE);
         existingVote(a, a2, Vote.APPROVE);
         stubVoting(a, a2);
 
@@ -217,7 +240,7 @@ class AdminApprovalServiceTest {
     void anAdminOfAnotherSocietyCannotVote() {
         Society s = society(1, 4);
         User outsider = admin(50, society(2, 4));
-        AdminApproval a = pending(s, admin(1, s), 4, 3, ApprovalEntityType.PLAYER_DROP);
+        AdminApproval a = pending(s, admin(1, s), 4, 1, ApprovalEntityType.PLAYER_DROP);
         stubVoting(a, outsider);
         assertThatThrownBy(() -> service.castVote(outsider, APPROVAL_ID, Vote.APPROVE, null))
                 .isInstanceOf(TenantAccessException.class);
@@ -227,7 +250,7 @@ class AdminApprovalServiceTest {
     void aDecidedApprovalAcceptsNoMoreVotes() {
         Society s = society(1, 4);
         User a2 = admin(2, s);
-        AdminApproval a = pending(s, admin(1, s), 4, 3, ApprovalEntityType.PLAYER_DROP);
+        AdminApproval a = pending(s, admin(1, s), 4, 1, ApprovalEntityType.PLAYER_DROP);
         a.setStatus(ApprovalStatus.APPROVED);
         stubVoting(a, a2);
         assertThatThrownBy(() -> service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null))
@@ -249,7 +272,7 @@ class AdminApprovalServiceTest {
         User a2 = admin(2, s);
         User a3 = admin(3, s);
         User a4 = admin(4, s);
-        AdminApproval a = pending(s, a1, 4, 3, ApprovalEntityType.PLAYER_DROP);
+        AdminApproval a = pending(s, a1, 4, 3, ApprovalEntityType.ADMIN_INVITE);
         existingVote(a, a2, Vote.APPROVE);
         existingVote(a, a3, Vote.APPROVE);
         stubVoting(a, a4);
@@ -268,7 +291,7 @@ class AdminApprovalServiceTest {
     void anApprovalBelowTheThresholdStaysPendingAndPublishesNothing() {
         Society s = society(1, 4);
         User a2 = admin(2, s);
-        AdminApproval a = pending(s, admin(1, s), 4, 3, ApprovalEntityType.PLAYER_DROP);
+        AdminApproval a = pending(s, admin(1, s), 4, 3, ApprovalEntityType.ADMIN_INVITE);
         stubVoting(a, a2);
 
         AdminApproval result = service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null);
@@ -283,7 +306,7 @@ class AdminApprovalServiceTest {
         User a1 = admin(1, s);
         User a2 = admin(2, s);
         User a3 = admin(3, s);
-        AdminApproval a = pending(s, a1, 5, 3, ApprovalEntityType.PLAYER_DROP);
+        AdminApproval a = pending(s, a1, 5, 3, ApprovalEntityType.ADMIN_INVITE);
         stubVoting(a, a2, a3);
 
         assertThat(service.castVote(a2, APPROVAL_ID, Vote.REJECT, null).getStatus()).isEqualTo(ApprovalStatus.PENDING);
@@ -297,7 +320,7 @@ class AdminApprovalServiceTest {
     void inAThreeAdminSocietyASingleRejectionIsEnoughBecauseOnlyTwoCanVote() {
         Society s = society(1, 3);
         User a2 = admin(2, s);
-        AdminApproval a = pending(s, admin(1, s), 3, 2, ApprovalEntityType.PLAYER_DROP);
+        AdminApproval a = pending(s, admin(1, s), 3, 2, ApprovalEntityType.ADMIN_INVITE);
         stubVoting(a, a2);
         assertThat(service.castVote(a2, APPROVAL_ID, Vote.REJECT, null).getStatus()).isEqualTo(ApprovalStatus.REJECTED);
     }
@@ -309,7 +332,7 @@ class AdminApprovalServiceTest {
         User a2 = admin(2, s);
         User a3 = admin(3, s);
         User a4 = admin(4, s);
-        AdminApproval a = pending(s, a1, 5, 3, ApprovalEntityType.PLAYER_DROP);
+        AdminApproval a = pending(s, a1, 5, 3, ApprovalEntityType.ADMIN_INVITE);
         stubVoting(a, a2, a3, a4);
 
         assertThat(service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null).getStatus()).isEqualTo(ApprovalStatus.PENDING);
@@ -322,7 +345,7 @@ class AdminApprovalServiceTest {
         Society s = society(1, 4);
         User a1 = admin(1, s);
         User a2 = admin(2, s);
-        AdminApproval a = pending(s, a1, 4, 3, ApprovalEntityType.REGISTRATION);
+        AdminApproval a = pending(s, a1, 4, 1, ApprovalEntityType.REGISTRATION);
         Registration own = new Registration();
         own.setEmail(a2.getEmail());
         when(registrations.findByApproval_Id(APPROVAL_ID)).thenReturn(List.of(own));
@@ -336,13 +359,129 @@ class AdminApprovalServiceTest {
     void anAdminNotInTheRegistrationBatchMayVoteOnIt() {
         Society s = society(1, 4);
         User a2 = admin(2, s);
-        AdminApproval a = pending(s, admin(1, s), 4, 3, ApprovalEntityType.REGISTRATION);
+        AdminApproval a = pending(s, admin(1, s), 4, 1, ApprovalEntityType.REGISTRATION);
         Registration someoneElse = new Registration();
         someoneElse.setEmail("someone.else@x.example");
         when(registrations.findByApproval_Id(APPROVAL_ID)).thenReturn(List.of(someoneElse));
         stubVoting(a, a2);
 
+        assertThat(service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null).getStatus()).isEqualTo(ApprovalStatus.APPROVED);
+    }
+
+    // ------------------------------------------------------------------ approval rules end to end (raise, then vote)
+
+    /** Raises a request of this type through the service; admin 1 is the requester. */
+    private AdminApproval raiseFor(Society s, String type) {
+        when(societies.findById(s.getId())).thenReturn(Optional.of(s));
+        when(approvals.save(any(AdminApproval.class))).thenAnswer(i -> i.getArgument(0));
+        Long entityId = ApprovalEntityType.ADMIN_INVITE.equals(type) ? null : 5L;
+        AdminApproval a = service.raise(admin(1, s), s.getId(), type, entityId, null, "Request", null);
+        a.setId(APPROVAL_ID);
+        return a;
+    }
+
+    @Test
+    void oneAdminApprovingAPlayerRegistrationApprovesIt() {
+        Society s = society(1, 5);
+        User a2 = admin(2, s);
+        AdminApproval a = raiseFor(s, ApprovalEntityType.REGISTRATION);
+        stubVoting(a, a2);
+
+        AdminApproval result = service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null);
+
+        assertThat(result.getApprovalsRequired()).isEqualTo(1);
+        assertThat(result.getStatus()).isEqualTo(ApprovalStatus.APPROVED);
+        assertThat(result.getDecisionNotes()).isEqualTo("1 approve / 0 reject (needed 1)");
+        assertThat(publishedEvent().approval().getStatus()).isEqualTo(ApprovalStatus.APPROVED);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {ApprovalEntityType.REGISTRATION_BATCH, ApprovalEntityType.PLAYER_DROP,
+            ApprovalEntityType.BULK_IMPORT, ApprovalEntityType.SEASON_DELETE, ApprovalEntityType.ADMIN_REMOVE,
+            ApprovalEntityType.TOURNAMENT_JOIN})
+    void oneAdminApprovingAnyOtherActionApprovesIt(String type) {
+        Society s = society(1, 5);
+        User a2 = admin(2, s);
+        AdminApproval a = raiseFor(s, type);
+        stubVoting(a, a2);
+
+        assertThat(service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null).getStatus()).isEqualTo(ApprovalStatus.APPROVED);
+        assertThat(publishedEvent().approval().getEntityType()).isEqualTo(type);
+    }
+
+    @Test
+    void oneOrTwoAdminApprovalsDoNotAddANewAdmin() {
+        Society s = society(1, 5);
+        User a2 = admin(2, s);
+        User a3 = admin(3, s);
+        AdminApproval a = raiseFor(s, ApprovalEntityType.ADMIN_INVITE);
+        stubVoting(a, a2, a3);
+        assertThat(a.getApprovalsRequired()).isEqualTo(3);
+
         assertThat(service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null).getStatus()).isEqualTo(ApprovalStatus.PENDING);
+        assertThat(service.castVote(a3, APPROVAL_ID, Vote.APPROVE, null).getStatus()).isEqualTo(ApprovalStatus.PENDING);
+
+        assertThat(a.countVotes(Vote.APPROVE)).isEqualTo(2);
+        assertThat(a.getDecidedAt()).isNull();
+        verifyNoInteractions(publisher);   // no admin is created
+    }
+
+    @Test
+    void threeDistinctAdminApprovalsAddANewAdmin() {
+        Society s = society(1, 5);
+        User a2 = admin(2, s);
+        User a3 = admin(3, s);
+        User a4 = admin(4, s);
+        AdminApproval a = raiseFor(s, ApprovalEntityType.ADMIN_INVITE);
+        stubVoting(a, a2, a3, a4);
+
+        service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null);
+        service.castVote(a3, APPROVAL_ID, Vote.APPROVE, null);
+        AdminApproval result = service.castVote(a4, APPROVAL_ID, Vote.APPROVE, null);
+
+        assertThat(result.getStatus()).isEqualTo(ApprovalStatus.APPROVED);
+        assertThat(result.getDecisionNotes()).isEqualTo("3 approve / 0 reject (needed 3)");
+        ApprovalDecidedEvent event = publishedEvent();
+        assertThat(event.approval().getEntityType()).isEqualTo(ApprovalEntityType.ADMIN_INVITE);
+        assertThat(event.decidedBy()).isSameAs(a4);
+    }
+
+    @Test
+    void theSameAdminCannotCountTwiceTowardsANewAdmin() {
+        Society s = society(1, 5);
+        User a2 = admin(2, s);
+        User a3 = admin(3, s);
+        User a4 = admin(4, s);
+        AdminApproval a = raiseFor(s, ApprovalEntityType.ADMIN_INVITE);
+        stubVoting(a, a2, a3, a4);
+
+        service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null);
+        assertThatThrownBy(() -> service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null))
+                .isInstanceOf(BusinessRuleException.class).hasMessageContaining("already voted");
+        assertThatThrownBy(() -> service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null))
+                .isInstanceOf(BusinessRuleException.class).hasMessageContaining("already voted");
+        service.castVote(a3, APPROVAL_ID, Vote.APPROVE, null);
+
+        // a2 tried three times, but only two distinct admins have approved
+        assertThat(a.countVotes(Vote.APPROVE)).isEqualTo(2);
+        assertThat(a.getStatus()).isEqualTo(ApprovalStatus.PENDING);
+        verifyNoInteractions(publisher);
+
+        assertThat(service.castVote(a4, APPROVAL_ID, Vote.APPROVE, null).getStatus()).isEqualTo(ApprovalStatus.APPROVED);
+    }
+
+    @Test
+    void aDuplicateVoteCaughtByTheDatabaseIsReportedAsAlreadyVoted() {
+        Society s = society(1, 5);
+        User a2 = admin(2, s);
+        AdminApproval a = raiseFor(s, ApprovalEntityType.ADMIN_INVITE);
+        stubVoting(a, a2);
+        when(approvals.saveAndFlush(any(AdminApproval.class)))
+                .thenThrow(new DataIntegrityViolationException("uk_approval_voter"));
+
+        assertThatThrownBy(() -> service.castVote(a2, APPROVAL_ID, Vote.APPROVE, null))
+                .isInstanceOf(BusinessRuleException.class).hasMessageContaining("already voted");
+        verifyNoInteractions(publisher);
     }
 
     // ------------------------------------------------------------------ withdrawing
@@ -352,7 +491,7 @@ class AdminApprovalServiceTest {
         Society s = society(1, 4);
         User a1 = admin(1, s);
         User a2 = admin(2, s);
-        AdminApproval a = pending(s, a1, 4, 3, ApprovalEntityType.PLAYER_DROP);
+        AdminApproval a = pending(s, a1, 4, 1, ApprovalEntityType.PLAYER_DROP);
         stubVoting(a);
 
         assertThatThrownBy(() -> service.withdraw(a2, APPROVAL_ID)).isInstanceOf(BusinessRuleException.class);

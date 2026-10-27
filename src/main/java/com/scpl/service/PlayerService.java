@@ -159,7 +159,7 @@ public class PlayerService {
         return changed;
     }
 
-    /** Dropping a player is destructive for fixtures and auctions, so it needs a 3-of-N approval. */
+    /** Dropping a player is destructive for fixtures and auctions, so it needs an admin approval. */
     @Transactional
     public AdminApproval requestDrop(User actor, Long societyId, Long playerId, String reason) {
         Tenancy.requireAdminOf(actor, societyId);

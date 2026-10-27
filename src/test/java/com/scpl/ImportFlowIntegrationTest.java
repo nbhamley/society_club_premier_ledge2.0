@@ -64,7 +64,6 @@ class ImportFlowIntegrationTest extends TenantFixtures {
         Long sid = fx.id();
         User a1 = fx.admins().get(0);
         User a2 = fx.admins().get(1);
-        User a3 = fx.admins().get(2);
         playerService.create(a1, sid, new PlayerRequest("Existing Dan", "dup@imp.example",
                 null, null, null, null, null, null, null, null, null, null, null));
 
@@ -100,8 +99,9 @@ class ImportFlowIntegrationTest extends TenantFixtures {
         assertThatThrownBy(() -> imports.replaceReview(a1, sid, id, new MockMultipartFile("file", "review.csv", "text/csv", editedBytes)))
                 .isInstanceOf(BusinessRuleException.class);
 
-        assertThat(approvalService.castVote(a2, approval.getId(), Vote.APPROVE, null).getStatus()).isEqualTo(ApprovalStatus.PENDING);
-        assertThat(approvalService.castVote(a3, approval.getId(), Vote.APPROVE, null).getStatus()).isEqualTo(ApprovalStatus.APPROVED);
+        // a bulk import needs a single approval from another admin
+        assertThat(approval.getApprovalsRequired()).isEqualTo(1);
+        assertThat(approvalService.castVote(a2, approval.getId(), Vote.APPROVE, null).getStatus()).isEqualTo(ApprovalStatus.APPROVED);
 
         BatchView done = imports.get(a1, sid, id);
         assertThat(done.status()).isEqualTo(BatchStatus.PARTIALLY_APPROVED);

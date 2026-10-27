@@ -7,8 +7,10 @@
     <div th:replace="~{fragments/layout :: flash}"></div>
     <h1>Approvals</h1>
     <nav th:replace="~{fragments/admin-layout :: adminNav('approvals')}"></nav>
-    <p class="muted">Sensitive actions need votes from your society's other admins. The admin who raised an item cannot vote on it.
-        It is approved when enough approvals arrive, and rejected as soon as enough rejections make that impossible.</p>
+    <p class="muted">Sensitive actions need votes from your society's other admins. The admin who raised an item cannot vote on it,
+        and each admin's vote counts once. One approval from any other admin is enough, except adding a new admin, which needs
+        3 different admins (or every admin who can vote, if the society has fewer). An item is rejected as soon as enough
+        rejections make approval impossible.</p>
 
     <nav class="tabs" data-tabs aria-label="Approval views">
         <a href="#pending" data-tab="pending">Pending

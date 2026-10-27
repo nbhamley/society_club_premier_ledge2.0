@@ -65,7 +65,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Bulk import (§9): upload, segregate, review, approve (3-of-N), apply.
+ * Bulk import (§9): upload, segregate, review, approve (admin approval), apply.
  *
  * <p>Transactions: SQLite allows one writer, so parsing and the AI call run outside any transaction and
  * only short ones touch the database. A batch moves UPLOADED to SEGREGATING by an atomic claim, so

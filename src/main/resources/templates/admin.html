@@ -16,7 +16,7 @@
     <div class="flash flash-err" role="alert" th:if="${console.kpis.readOnly}">
         This society is read-only, so changes are blocked. <a th:href="@{/society-admin/billing}">Open billing</a> to fix it.</div>
     <div class="flash" th:if="${console.adminCount < 3}">
-        A society needs at least 3 admins for approvals to work. <a th:href="@{/society-admin/contacts}">Invite an admin</a>.</div>
+        A society needs at least 3 admins to be activated, and approvals need at least one admin besides the requester. <a th:href="@{/society-admin/contacts}">Invite an admin</a>.</div>
 
     <nav th:replace="~{fragments/admin-layout :: adminNav('console')}"></nav>
 

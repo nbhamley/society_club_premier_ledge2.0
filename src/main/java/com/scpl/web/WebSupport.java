@@ -97,7 +97,9 @@ public class WebSupport {
 
     /** Flash text for an action that was sent to the admin team for a vote instead of being carried out. */
     public static String approvalRaised(String what, AdminApproval a) {
-        return what + " It needs " + a.getApprovalsRequired() + " approval" + (a.getApprovalsRequired() == 1 ? "" : "s")
-                + " from the other admins before it takes effect. Track it under Approvals.";
+        int required = a.getApprovalsRequired();
+        String needs = required == 1 ? "approval from one other admin"
+                : "approvals from " + required + " different admins";
+        return what + " It needs " + needs + " before it takes effect. Track it under Approvals.";
     }
 }

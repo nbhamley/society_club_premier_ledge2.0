@@ -1,6 +1,6 @@
 package com.scpl.exception;
 
-/** Thrown when an operation that needs a 3-of-N approval is attempted directly. */
+/** Thrown when an operation that needs an admin approval is attempted directly. */
 public class ApprovalRequiredException extends RuntimeException {
 
     private final Long approvalId;

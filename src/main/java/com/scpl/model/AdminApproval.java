@@ -27,10 +27,10 @@ import java.util.Set;
  * One governed operation awaiting votes from the society's admins.
  *
  * <p>The requester can never vote, so only (eligibleVoters - 1) people can cast votes.
- * With the default threshold of 3 and a society of exactly 3 admins that pool is 2, so
- * AdminApprovalService clamps approvalsRequired to min(default, pool) when it raises the
- * request. The helper methods below work off the stored values only, so the clamp is
- * decided once and the outcome never shifts if admins are added later.
+ * AdminApprovalService sets approvalsRequired when it raises the request: 1 for most types, and
+ * for ADMIN_INVITE min(3, pool), since a society of exactly 3 admins has a pool of only 2.
+ * The helper methods below work off the stored values only, so the threshold is decided once
+ * and the outcome never shifts if admins are added later.
  */
 @Entity
 @Table(name = "admin_approvals")

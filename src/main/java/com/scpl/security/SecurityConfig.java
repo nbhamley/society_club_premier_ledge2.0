@@ -59,6 +59,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico",
                                 "/error", "/error/**").permitAll()
+                        // Browser probes (e.g. Chrome DevTools' com.chrome.devtools.json). Left protected, they would be
+                        // saved as the post-login target and the user would land on a JSON 404 after signing in.
+                        .requestMatchers("/.well-known/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/", "/about", "/subscribe", "/login", "/matches/*",
                                 "/share/*", "/society/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/subscribe", "/society/*/register").permitAll()

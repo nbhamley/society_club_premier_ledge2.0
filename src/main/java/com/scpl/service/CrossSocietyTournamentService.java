@@ -40,7 +40,7 @@ import java.util.Set;
  * Cross-society tournaments (§6), gated by feature.cross-society.enabled and the Premium plan.
  *
  * <p>A society "accepts" a tournament by passing a TOURNAMENT_JOIN approval inside its own admin
- * team, so the usual 3-of-N rules apply with no extra vote tables. participatingSocieties holds
+ * team, so the usual approval rules apply with no extra vote tables. participatingSocieties holds
  * the host plus everyone invited; acceptance is read from each society's latest approval.
  * The aggregate roster exposes name, role and stats only: it reads through a closed projection,
  * so PII is never loaded.
@@ -185,7 +185,7 @@ public class CrossSocietyTournamentService {
         return t;
     }
 
-    /** An invited society starts its own 3-of-N vote on joining. */
+    /** An invited society starts its own approval vote on joining. */
     @Transactional
     public AdminApproval requestJoin(User actor, Long societyId, Long tournamentId) {
         assertEnabled();

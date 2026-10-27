@@ -46,7 +46,7 @@ import java.util.UUID;
  * {"players":[{...}],"teams":[...],"matches":[...],"awards":[...],"vendors":[...],"bills":[...]}.
  * Item keys use the same names as review.csv (aliases are accepted); an optional "confidence" is 0-100
  * (or 0-1). Everything returned is untrusted: values are sanitised, sizes capped, unknown kinds and
- * fields dropped, and the rows still go through validation, conflict checks and 3-of-N approval.
+ * fields dropped, and the rows still go through validation, conflict checks and admin approval.
  *
  * <p>The file contains player contact details. The endpoint is operator-configured, and plain http is
  * accepted only for loopback or private-network addresses; anything else must be https.

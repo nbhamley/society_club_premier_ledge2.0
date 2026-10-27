@@ -32,10 +32,17 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 /**
- * 3-of-N approval engine (§6).
+ * Admin approval engine (§6).
  *
- * <p>Threshold: approvalsRequired = min(configured default, eligibleVoters - 1). The requester
- * can never vote, so a 3-admin society has only 2 possible voters and could never reach 3.
+ * <p>Threshold, fixed per request when it is raised (see {@link #requiredApprovals}):
+ * <ul>
+ *   <li>ADMIN_INVITE: min(configured admin-invite threshold, eligibleVoters - 1) distinct admins. The requester
+ *       can never vote, so a 3-admin society has only 2 possible voters and could never reach 3.</li>
+ *   <li>Everything else (registrations, drops, imports, season deletes, admin removals, tournaments):
+ *       a single approval from any admin other than the requester.</li>
+ * </ul>
+ * Votes are counted per distinct admin: a second vote by the same admin is refused, and the
+ * (approval_id, voter_id) unique constraint backs that up.
  *
  * <p>Concurrency: "count votes, then decide" must not interleave for one approval. A striped
  * in-JVM lock wraps a whole programmatic transaction (the lock has to cover the commit, which
@@ -46,6 +53,8 @@ import java.util.stream.IntStream;
 public class AdminApprovalService {
 
     private static final int LOCK_STRIPES = 32;
+    /** Approvals needed for every type except ADMIN_INVITE. */
+    static final int SINGLE_APPROVAL = 1;
 
     private final AdminApprovalRepository approvals;
     private final SocietyRepository societies;
@@ -55,7 +64,7 @@ public class AdminApprovalService {
     private final AuditService audit;
     private final ApplicationEventPublisher publisher;
     private final TransactionTemplate tx;
-    private final int defaultRequired;
+    private final int adminInviteRequired;
 
     private final ReentrantLock[] locks = IntStream.range(0, LOCK_STRIPES)
             .mapToObj(i -> new ReentrantLock()).toArray(ReentrantLock[]::new);
@@ -64,7 +73,7 @@ public class AdminApprovalService {
                                 UserRepository users, RegistrationRepository registrations,
                                 NotificationService notifications, AuditService audit,
                                 ApplicationEventPublisher publisher, PlatformTransactionManager txManager,
-                                @Value("${scpl.approval.default-required:3}") int defaultRequired) {
+                                @Value("${scpl.approval.admin-invite-required:3}") int adminInviteRequired) {
         this.approvals = approvals;
         this.societies = societies;
         this.users = users;
@@ -73,7 +82,22 @@ public class AdminApprovalService {
         this.audit = audit;
         this.publisher = publisher;
         this.tx = new TransactionTemplate(txManager);
-        this.defaultRequired = defaultRequired;
+        if (adminInviteRequired < 1) {
+            throw new IllegalArgumentException("scpl.approval.admin-invite-required must be at least 1");
+        }
+        this.adminInviteRequired = adminInviteRequired;
+    }
+
+    /**
+     * Approvals needed for a request of this type when {@code pool} admins (everyone except the
+     * requester) can vote. Adding an admin needs the configured number of distinct admins, capped at the
+     * pool so a small society can still decide; every other type needs one approval.
+     */
+    public int requiredApprovals(String entityType, int pool) {
+        if (ApprovalEntityType.ADMIN_INVITE.equals(entityType)) {
+            return Math.min(adminInviteRequired, pool);
+        }
+        return SINGLE_APPROVAL;
     }
 
     // ------------------------------------------------------------------ raise
@@ -112,7 +136,7 @@ public class AdminApprovalService {
         a.setRequestedBy(requester);
         a.setRequestedAt(LocalDateTime.now());
         a.setEligibleVoters(eligible);
-        a.setApprovalsRequired(Math.min(defaultRequired, pool));
+        a.setApprovalsRequired(requiredApprovals(entityType, pool));
         a.setNotes(notes);
         a.setPayload(payload);
         if (entityIds != null) {

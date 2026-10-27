@@ -99,6 +99,11 @@ class SecurityIntegrationTest extends IntegrationTestBase {
     // ------------------------------------------------------------------ tenant isolation and roles
 
     @Test
+    void browserWellKnownProbesAreNotSavedAsTheLoginTarget() throws Exception {
+        mvc.perform(get("/.well-known/appspecific/com.chrome.devtools.json")).andExpect(status().isNotFound());
+    }
+
+    @Test
     void anonymousVisitorsAreSentToTheLoginPage() throws Exception {
         mvc.perform(get("/society-admin")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrlPattern("**/login"));
         mvc.perform(get("/dashboard")).andExpect(status().is3xxRedirection());

@@ -16,7 +16,7 @@ import java.time.LocalDate;
 
 /**
  * Public sign-up for a season. Becomes a Player (plus an AuctionLot) only after the
- * 3-of-N approval completes; until then it sits in AWAITING_APPROVAL.
+ * admin approval completes; until then it sits in AWAITING_APPROVAL.
  */
 @Entity
 @Table(name = "registrations")

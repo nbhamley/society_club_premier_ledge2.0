@@ -18,7 +18,8 @@
 
     <section class="section">
         <h2>Admin team <small class="muted" th:text="'(' + ${contactsPage.adminCount} + ')'">(3)</small></h2>
-        <p class="muted">Inviting or removing an admin needs approval from the other admins.</p>
+        <p class="muted">Inviting an admin needs approval from 3 different admins (or all the other admins, if there are fewer);
+            removing one needs a single approval from another admin.</p>
         <div class="table-wrap"><table class="table">
             <thead><tr><th>Admin</th><th>Email</th><th>Phone</th><th></th></tr></thead>
             <tbody>

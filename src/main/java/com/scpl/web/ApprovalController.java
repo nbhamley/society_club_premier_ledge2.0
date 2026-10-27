@@ -17,7 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 /**
  * Pending queue, voting, history and the society's audit log (§6, §15). Both POSTs first load the approval through
  * the society-scoped finder, so another society's approval id is a 404, not a 403 that confirms it exists.
- * The 3-of-N rules themselves (requester cannot vote, no double votes, conflict of interest) live in AdminApprovalService.
+ * The approval rules themselves (requester cannot vote, no double votes, conflict of interest) live in AdminApprovalService.
  */
 @Controller
 @RequestMapping("/society-admin/approvals")
