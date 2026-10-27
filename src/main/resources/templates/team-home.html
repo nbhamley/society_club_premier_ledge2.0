@@ -43,7 +43,7 @@
             <div th:replace="~{fragments/layout :: standings(${team.standings})}"></div></section>
 
         <section class="section"><h2>Our matches</h2>
-            <div class="grid grid-2"><div th:each="m : ${team.matches}" th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></div>
+            <div class="grid grid-2"><th:block th:each="m : ${team.matches}"><div th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></th:block></div>
             <p class="muted" th:if="${#lists.isEmpty(team.matches)}">No matches scheduled yet.</p></section>
     </th:block>
 </main>

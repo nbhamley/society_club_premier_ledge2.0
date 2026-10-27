@@ -11,15 +11,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 
 /**
  * URL-level rules (the first gate; TenantGuard and Tenancy are the real tenant checks).
@@ -75,15 +80,25 @@ public class SecurityConfig {
                         .deleteCookies("JSESSIONID"))
                 .exceptionHandling(e -> e
                         .accessDeniedHandler(deniedHandler)
-                        // The JSON API answers 401 instead of redirecting to the HTML login page.
-                        .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                                new AntPathRequestMatcher("/api/**")))
+                        .authenticationEntryPoint(authenticationEntryPoint()))
                 .headers(h -> h
                         .contentSecurityPolicy(c -> c.policyDirectives(CSP))
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                         .referrerPolicy(r -> r.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
                 .addFilterBefore(new LoginThrottleFilter(throttle), UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    /**
+     * The JSON API answers 401; everything else goes to the login page. Set explicitly because otherwise
+     * the first registered entry point (the API one) becomes the fallback for requests without Accept: text/html.
+     */
+    private static AuthenticationEntryPoint authenticationEntryPoint() {
+        LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> byPath = new LinkedHashMap<>();
+        byPath.put(new AntPathRequestMatcher("/api/**"), new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
+        DelegatingAuthenticationEntryPoint entryPoint = new DelegatingAuthenticationEntryPoint(byPath);
+        entryPoint.setDefaultEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"));
+        return entryPoint;
     }
 
     /**

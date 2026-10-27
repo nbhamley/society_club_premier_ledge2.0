@@ -29,7 +29,7 @@
         </div></section>
 
     <section class="section"><h2>Matches</h2>
-        <div class="grid grid-2"><div th:each="m : ${detail.matches}" th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></div>
+        <div class="grid grid-2"><th:block th:each="m : ${detail.matches}"><div th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></th:block></div>
         <p class="muted" th:if="${#lists.isEmpty(detail.matches)}">No matches yet.</p></section>
 
     <section class="section" th:unless="${#lists.isEmpty(detail.awards)}"><h2>Awards</h2>

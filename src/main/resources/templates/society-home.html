@@ -28,12 +28,12 @@
 
     <section class="section" th:unless="${#lists.isEmpty(home.upcoming)}">
         <h2>Upcoming fixtures</h2>
-        <div class="grid grid-2"><div th:each="m : ${home.upcoming}" th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></div>
+        <div class="grid grid-2"><th:block th:each="m : ${home.upcoming}"><div th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></th:block></div>
     </section>
 
     <section class="section" th:unless="${#lists.isEmpty(home.recentResults)}">
         <h2>Recent results</h2>
-        <div class="grid grid-2"><div th:each="m : ${home.recentResults}" th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></div>
+        <div class="grid grid-2"><th:block th:each="m : ${home.recentResults}"><div th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></th:block></div>
     </section>
 
     <section class="section" th:unless="${#lists.isEmpty(home.teams)}">

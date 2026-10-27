@@ -10,7 +10,7 @@
 
     <h2>Fixtures and results</h2>
     <div class="grid grid-2">
-        <div th:each="m : ${matches}" th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div>
+        <th:block th:each="m : ${matches}"><div th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></th:block>
     </div>
     <p class="muted" th:if="${#lists.isEmpty(matches)}">No matches have been scheduled yet.</p>
 </main>

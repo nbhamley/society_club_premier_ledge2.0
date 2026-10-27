@@ -113,7 +113,8 @@ class AdminPagesSmokeTest extends IntegrationTestBase {
 
         // another society's admin cannot touch it
         mvc.perform(post("/society-admin/bills/" + bill.getId() + "/delete").with(csrf()).with(as("sh.admin1")))
-                .andExpect(status().isForbidden());   // Sunrise Heights has no vendor module on the trial
+                .andExpect(status().is3xxRedirection());   // refused (no vendor module on the trial); POSTs redirect back with a flash
+        assertThat(bills.findById(bill.getId())).isPresent();
         mvc.perform(post("/society-admin/bills/" + bill.getId() + "/delete").with(csrf()).with(as("gv.admin1")))
                 .andExpect(status().is3xxRedirection());
         assertThat(bills.findById(bill.getId())).isEmpty();
