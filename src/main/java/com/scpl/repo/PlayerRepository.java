@@ -55,4 +55,6 @@ public interface PlayerRepository extends SocietyScopedRepository<Player, Long> 
     Optional<Player> findBySociety_IdAndEmailIgnoreCase(Long societyId, String email);
 
     long countBySociety_IdAndActiveTrue(Long societyId);
+
+    long countByActiveTrue();
 }

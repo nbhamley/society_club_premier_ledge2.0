@@ -6,34 +6,81 @@
 <main id="main">
     <div th:replace="~{fragments/layout :: flash}"></div>
 
-    <section class="hero">
-        <div class="container">
-            <h1>Run your society's cricket league, end to end</h1>
-            <p class="lead">Registrations, auctions, fixtures, points tables, vendors and bills for every residential
-                society, each with its own private data.</p>
-            <p><a class="btn btn-large" th:href="@{/subscribe}">Subscribe your society &ndash; 14-day free trial</a>
-                <a class="btn btn-large btn-secondary" href="#pricing">See pricing</a></p>
+    <section class="hero hero-stadium">
+        <div class="floodlights" aria-hidden="true"><span></span><span></span></div>
+        <div class="container hero-grid">
+            <div>
+                <p class="eyebrow">&#127951; Society cricket, stadium energy</p>
+                <h1>Run your society's cricket league, <span class="glow">end to end</span></h1>
+                <p class="lead">Registrations, auctions, fixtures, points tables, vendors and bills for every residential
+                    society, each with its own private data.</p>
+                <p class="hero-actions"><a class="btn btn-large btn-gold" th:href="@{/subscribe}">Subscribe your society &ndash; 14-day free trial</a>
+                    <a class="btn btn-large btn-secondary" href="#seasons-h">See what's live</a></p>
+                <div class="hero-stats">
+                    <p><b th:attr="data-count=${#lists.size(home.societies)}" th:text="${#lists.size(home.societies)}">3</b><span>Societies</span></p>
+                    <p><b th:attr="data-count=${#lists.size(home.seasons)}" th:text="${#lists.size(home.seasons)}">4</b><span>Live seasons</span></p>
+                    <p><b th:attr="data-count=${#lists.size(home.events)}" th:text="${#lists.size(home.events)}">6</b><span>Upcoming events</span></p>
+                </div>
+            </div>
+            <div class="hero-art" aria-hidden="true">
+                <img class="hero-logo" th:src="@{/images/scpl-logo.svg}" alt="" width="220" height="220">
+                <span class="ball"></span>
+            </div>
         </div>
     </section>
 
+    <div class="ticker" th:unless="${#lists.isEmpty(home.events) and #lists.isEmpty(home.seasons)}" aria-label="What's coming up">
+        <div class="ticker-track">
+            <th:block th:each="pass : ${#numbers.sequence(1, 2)}">
+                <span th:each="s : ${home.seasons}" th:attr="aria-hidden=${pass == 2} ? 'true' : null">
+                    <b th:text="${s.societyName}">Society</b> &middot; <span th:text="${s.name}">Season</span>
+                    <em th:text="${s.statusLabel}">Upcoming</em></span>
+                <span th:each="e : ${home.events}" th:attr="aria-hidden=${pass == 2} ? 'true' : null">
+                    <b th:text="${e.typeLabel}">Match</b> &middot; <span th:text="${e.title}">Event</span>
+                    <em th:text="${#temporals.format(e.eventDate, 'd MMM')}">date</em></span>
+            </th:block>
+        </div>
+    </div>
+
     <div class="container">
-        <section class="section" aria-labelledby="events-h">
-            <h2 id="events-h">Upcoming events</h2>
+        <section class="section" aria-labelledby="seasons-h">
+            <h2 id="seasons-h" class="section-title">Seasons on the field</h2>
             <div class="grid grid-3">
-                <article class="card" th:each="e : ${home.events}">
+                <a class="card card-link season-card" th:each="s : ${home.seasons}"
+                   th:href="@{/society/{slug}/seasons/{id}(slug=${s.societySlug},id=${s.id})}">
+                    <p class="season-top">
+                        <img class="logo" th:if="${s.societyLogoUrl}" th:src="@{${s.societyLogoUrl}}" alt="" loading="lazy">
+                        <span class="badge" th:classappend="${s.registrationOpen} ? 'badge-hot'" th:text="${s.statusLabel}">Upcoming</span></p>
+                    <h3 th:text="${s.name}">Season</h3>
+                    <p class="muted" th:text="${s.societyName}">Society</p>
+                    <p class="muted" th:if="${s.startDate}">
+                        <span th:text="${#temporals.format(s.startDate, 'd MMM yyyy')}">start</span>
+                        <span th:if="${s.endDate}" th:text="'&ndash; ' + ${#temporals.format(s.endDate, 'd MMM yyyy')}">end</span></p>
+                    <span class="card-cta" th:text="${s.registrationOpen} ? 'Register now &rarr;' : 'View season &rarr;'">View season</span>
+                </a>
+            </div>
+            <p class="muted" th:if="${#lists.isEmpty(home.seasons)}">No seasons are running yet. Check back soon.</p>
+        </section>
+
+        <section class="section" aria-labelledby="events-h">
+            <h2 id="events-h" class="section-title">Upcoming events</h2>
+            <div class="grid grid-3">
+                <article class="card event-card" th:each="e : ${home.events}">
                     <img class="thumb" th:if="${e.thumbnailUrl}" th:src="@{${e.thumbnailUrl}}" th:alt="${e.title}" loading="lazy">
                     <p class="muted"><span class="badge" th:text="${e.typeLabel}">Match</span>
                         <span th:text="${#temporals.format(e.eventDate, 'EEE d MMM, HH:mm')}">date</span></p>
                     <h3 th:text="${e.title}">Event</h3>
                     <p th:if="${e.description}" th:text="${e.description}">Description</p>
-                    <a th:if="${e.societySlug}" th:href="@{/society/{s}(s=${e.societySlug})}" th:text="${e.societyName}">Society</a>
+                    <p class="card-links">
+                        <a th:if="${e.externalLink}" th:href="@{${e.externalLink}}" target="_blank" rel="noopener noreferrer">Watch / details &#8599;</a>
+                        <a th:if="${e.societySlug}" th:href="@{/society/{s}(s=${e.societySlug})}" th:text="${e.societyName} + ' &rarr;'">Society</a></p>
                 </article>
             </div>
             <p class="muted" th:if="${#lists.isEmpty(home.events)}">No upcoming events yet. Check back soon.</p>
         </section>
 
         <section class="section" aria-labelledby="watch-h" th:unless="${#lists.isEmpty(home.thumbnails)}">
-            <h2 id="watch-h">Watch and follow</h2>
+            <h2 id="watch-h" class="section-title">Watch and follow</h2>
             <div class="thumb-strip">
                 <a class="thumb-link" th:each="t : ${home.thumbnails}" th:href="@{${t.externalLink}}"
                    th:if="${t.externalLink}" target="_blank" rel="noopener noreferrer">
@@ -44,7 +91,7 @@
         </section>
 
         <section class="section" aria-labelledby="winners-h">
-            <h2 id="winners-h">Recent winners</h2>
+            <h2 id="winners-h" class="section-title">Recent winners</h2>
             <div class="grid grid-3">
                 <article class="card" th:each="w : ${home.winners}">
                     <img class="thumb" th:if="${w.imageUrl}" th:src="@{${w.imageUrl}}" th:alt="${w.title}" loading="lazy">
@@ -58,7 +105,7 @@
         </section>
 
         <section class="section" aria-labelledby="societies-h">
-            <h2 id="societies-h">Societies on SCPL</h2>
+            <h2 id="societies-h" class="section-title">Societies on SCPL</h2>
             <div class="grid grid-3">
                 <a class="card card-link" th:each="s : ${home.societies}" th:href="@{/society/{slug}(slug=${s.slug})}">
                     <img class="logo" th:if="${s.logoUrl}" th:src="@{${s.logoUrl}}" alt="" loading="lazy">
@@ -70,7 +117,7 @@
         </section>
 
         <section class="section" aria-labelledby="sponsors-h" th:unless="${#lists.isEmpty(home.sponsors)}">
-            <h2 id="sponsors-h">Our sponsors</h2>
+            <h2 id="sponsors-h" class="section-title">Our sponsors</h2>
             <ul class="sponsor-strip plain">
                 <li th:each="s : ${home.sponsors}">
                     <img class="logo" th:if="${s.logoUrl}" th:src="@{${s.logoUrl}}" th:alt="${s.name}" loading="lazy">
@@ -82,7 +129,7 @@
         </section>
 
         <section class="section" id="pricing" aria-labelledby="pricing-h">
-            <h2 id="pricing-h">Pricing</h2>
+            <h2 id="pricing-h" class="section-title">Pricing</h2>
             <p>Every society starts with a 14-day free trial. Pay monthly per society; cancel any time and keep an encrypted export of your data.</p>
             <div th:replace="~{fragments/layout :: pricing(${home.plans})}"></div>
         </section>

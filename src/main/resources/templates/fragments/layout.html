@@ -20,7 +20,8 @@
 <header class="site-header" th:fragment="header">
     <a class="skip-link" href="#main">Skip to content</a>
     <div class="container bar">
-        <a class="brand" th:href="@{/}">&#127951; SCPL</a>
+        <a class="brand" th:href="@{/}"><img class="brand-logo" th:src="@{/images/scpl-logo.svg}" alt="" width="40" height="40">
+            <span>SCPL<small>Society Club Premier League</small></span></a>
         <nav class="main-nav" aria-label="Main">
             <a th:href="@{/}">Home</a>
             <a th:href="@{/about}">About</a>
@@ -69,10 +70,12 @@
 
 <footer class="site-footer" th:fragment="footer">
     <div class="container">
+        <p class="footer-brand"><img th:src="@{/images/scpl-logo.svg}" alt="" width="32" height="32"> Play hard. Play fair. Play together.</p>
         <p>&copy; Society Club Premier League &middot;
             <a th:href="@{/about}">About</a> &middot; <a th:href="@{/subscribe}">Pricing</a> &middot; <a th:href="@{/login}">Sign in</a></p>
     </div>
     <script th:src="@{/js/admin.js}" defer></script>
+    <script th:src="@{/js/fx.js}" defer></script>
 </footer>
 
 <!-- Pricing matrix (built from PlanCatalog, so prices live in one place). -->

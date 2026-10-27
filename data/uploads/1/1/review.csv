@@ -1,0 +1,6 @@
+﻿Kind,SourceFile,SourceRow,Include,name,title,vendor,season,email,phone,dateOfBirth,flatNumber,address,role,battingStyle,bowlingStyle,jerseyNumber,basePrice,shortName,color,teamA,teamB,date,venue,stage,category,description,player,team,contactPerson,whatsapp,city,website,rating,notes,amount,billDate,Confidence,Conflict
+PLAYER,new-players-october.csv,2,Y,Pranav Kulkarni,,,,pranav.kulkarni@greenvalley.example,98220 00036,,,,All-Rounder,Right-hand bat,Right-arm medium,,,,,,,,,,,,,,,,,,,,,,90,
+PLAYER,new-players-october.csv,3,Y,Tanmay Gokhale,,,,tanmay.gokhale@greenvalley.example,98220 00037,,,,Batsman,Left-hand bat,Does not bowl,,,,,,,,,,,,,,,,,,,,,,90,
+PLAYER,new-players-october.csv,4,Y,Shreya Bhosale,,,,shreya.bhosale@greenvalley.example,98220 00038,,,,Bowler,Right-hand bat,Left-arm spin,,,,,,,,,,,,,,,,,,,,,,90,
+PLAYER,new-players-october.csv,5,Y,Omkar Phadke,,,,omkar.phadke@greenvalley.example,98220 00039,,,,Wicket-Keeper,Right-hand bat,Does not bowl,,,,,,,,,,,,,,,,,,,,,,90,
+PLAYER,new-players-october.csv,6,N,Arjun M,,,,arjun.mehta@greenvalley.example,98220 00035,,,,Batsman,Right-hand bat,Does not bowl,,,,,,,,,,,,,,,,,,,,,,70,email_exists

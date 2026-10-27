@@ -7,6 +7,9 @@
     <div th:replace="~{fragments/layout :: flash}"></div>
     <p class="muted"><a th:href="@{/society/{s}(s=${options.societySlug})}" th:text="${options.societyName}">Society</a></p>
     <h1>Register as a player</h1>
+    <p class="muted">Already registered?
+        <a th:if="${nav != null and nav.societySlug == options.societySlug}" th:href="@{/me/player}">View your player profile</a>
+        <a th:unless="${nav != null and nav.societySlug == options.societySlug}" th:href="@{/login}">Sign in to review your profile</a>.</p>
 
     <p th:if="${#lists.isEmpty(options.seasons)}" class="flash">
         Registration is not open right now. Check the <a th:href="@{/society/{s}/seasons(s=${options.societySlug})}">seasons page</a> later.</p>

@@ -4,7 +4,6 @@ import com.scpl.dto.DashboardViews.DashboardView;
 import com.scpl.dto.DashboardViews.TeamHomeView;
 import com.scpl.dto.PlayerProfileView;
 import com.scpl.dto.PublicViews.MatchView;
-import com.scpl.exception.NotFoundException;
 import com.scpl.exception.TenantAccessException;
 import com.scpl.model.Match;
 import com.scpl.model.Player;
@@ -74,10 +73,7 @@ public class DashboardService {
                 }
             }
         }
-        PlayerProfileView own = null;
-        if (u.getPlayerId() != null) {
-            PlayerProfileView own = u.getPlayerId() == null ? null : playerService.ownProfile(u);
-        }
+        PlayerProfileView own = u.getPlayerId() == null ? null : playerService.ownProfile(u);
         return new DashboardView(admin, society.getName(), society.getSlug(), society.getStatus().getLabel(),
                 current == null ? null : current.getName(), teams.countBySociety_Id(societyId),
                 players.countBySociety_IdAndActiveTrue(societyId), matches.countBySociety_Id(societyId), pending,

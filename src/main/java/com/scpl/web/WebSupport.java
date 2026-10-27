@@ -1,6 +1,7 @@
 package com.scpl.web;
 
 import com.scpl.dto.PublicViews;
+import com.scpl.model.AdminApproval;
 import com.scpl.model.Society;
 import com.scpl.model.User;
 import com.scpl.security.CurrentUser;
@@ -31,10 +32,7 @@ public class WebSupport {
         return new PublicViews.SocietyCard(s.getName(), s.getSlug(), s.getCity(), s.getLogoUrl(), s.getDescription());
     }
 
-    /**
-     * Whether to render the share row. This is only a UI hint: the owner-or-admin rule is enforced in
-     * SocialShareService, which refuses anything else with 403.
-     */
+    /** Whether to render the share row. Only a UI hint: SocialShareService enforces ownership. */
     public boolean canShare(String societySlug) {
         User u = current.orNull();
         if (u == null || u.getSociety() == null || societySlug == null) {
@@ -43,10 +41,7 @@ public class WebSupport {
         return societySlug.equals(u.getSociety().getSlug()) && (u.isSocietyAdmin() || u.getPlayerId() != null);
     }
 
-    /**
-     * Same-origin path (plus query) from the Referer header, for "go back with a message".
-     * Anything that is not our own host falls back, so this cannot be used as an open redirect.
-     */
+    /** Same-origin path (plus query) from the Referer header; anything off-site falls back, so no open redirect. */
     public String backTo(HttpServletRequest request, String fallback) {
         String ref = request.getHeader("Referer");
         if (ref == null || ref.isBlank()) {
@@ -77,7 +72,7 @@ public class WebSupport {
         }
     }
 
-    /** JSON for API paths and fetch/XHR calls; HTML otherwise. admin.js must send X-Requested-With on fetch. */
+    /** JSON for API paths and fetch/XHR calls; HTML otherwise. */
     public static boolean wantsJson(HttpServletRequest r) {
         String path = r.getRequestURI().substring(r.getContextPath().length());
         if (path.startsWith("/api/")) {
@@ -98,5 +93,11 @@ public class WebSupport {
             }
             return e.getDefaultMessage();
         }).orElse("Please check the form and try again");
+    }
+
+    /** Flash text for an action that was sent to the admin team for a vote instead of being carried out. */
+    public static String approvalRaised(String what, AdminApproval a) {
+        return what + " It needs " + a.getApprovalsRequired() + " approval" + (a.getApprovalsRequired() == 1 ? "" : "s")
+                + " from the other admins before it takes effect. Track it under Approvals.";
     }
 }

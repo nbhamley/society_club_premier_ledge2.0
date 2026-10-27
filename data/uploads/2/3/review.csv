@@ -1,0 +1,6 @@
+﻿Kind,SourceFile,SourceRow,Include,name,title,vendor,season,email,phone,dateOfBirth,flatNumber,address,role,battingStyle,bowlingStyle,jerseyNumber,basePrice,shortName,color,teamA,teamB,date,venue,stage,category,description,player,team,contactPerson,whatsapp,city,website,rating,notes,amount,billDate,Confidence,Conflict
+PLAYER,residents-signup-sheet.csv,2,Y,Aarav Trivedi,,,,aarav.trivedi@sunriseheights.example,98220 00068,,,,Batsman,Right-hand bat,Does not bowl,,,,,,,,,,,,,,,,,,,,,,90,
+PLAYER,residents-signup-sheet.csv,3,Y,Myra Fernandes,,,,myra.fernandes@sunriseheights.example,98220 00069,,,,All-Rounder,Left-hand bat,Left-arm medium,,,,,,,,,,,,,,,,,,,,,,90,
+PLAYER,residents-signup-sheet.csv,4,Y,Zubin Irani,,,,zubin.irani@sunriseheights.example,98220 00070,,,,Bowler,Right-hand bat,Right-arm fast,,,,,,,,,,,,,,,,,,,,,,90,
+PLAYER,residents-signup-sheet.csv,5,Y,Leela Narayan,,,,leela.narayan@sunriseheights.example,98220 00071,,,,Wicket-Keeper,Right-hand bat,Does not bowl,,,,,,,,,,,,,,,,,,,,,,90,
+PLAYER,residents-signup-sheet.csv,6,N,Yash Kapoor,,,,,98220 00067,,,,Batsman,Right-hand bat,Does not bowl,,,,,,,,,,,,,,,,,,,,,,70,duplicate_name

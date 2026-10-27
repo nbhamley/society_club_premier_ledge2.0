@@ -6,20 +6,48 @@
 <main id="main" class="container">
     <div th:replace="~{fragments/layout :: flash}"></div>
 
-    <section class="society-hero">
-        <img class="logo logo-large" th:if="${home.logoUrl}" th:src="@{${home.logoUrl}}" alt="">
+    <section class="society-hero hero-stadium">
+        <div class="floodlights" aria-hidden="true"><span></span><span></span></div>
+        <img class="logo logo-large" th:src="${home.logoUrl != null} ? @{${home.logoUrl}} : @{/images/scpl-logo.svg}" alt="">
         <div>
+            <p class="eyebrow" th:if="${home.city}" th:text="${home.city}">City</p>
             <h1 th:text="${home.name}">Society</h1>
-            <p class="muted" th:if="${home.city}" th:text="${home.city}">City</p>
             <p th:if="${home.description}" th:text="${home.description}">About</p>
-            <p th:if="${home.season != null and home.season.registrationOpen}">
-                <a class="btn" th:href="@{/society/{s}/register(s=${home.slug},season=${home.season.id})}">Register for [[${home.season.name}]]</a></p>
+            <p class="hero-actions" th:if="${home.season != null}">
+                <a class="btn btn-gold" th:if="${home.season.registrationOpen}"
+                   th:href="@{/society/{s}/register(s=${home.slug},season=${home.season.id})}">Register for [[${home.season.name}]]</a>
+                <a class="btn btn-secondary" th:href="@{/society/{s}/seasons/{id}(s=${home.slug},id=${home.season.id})}">
+                    [[${home.season.name}]] &middot; [[${home.season.statusLabel}]]</a></p>
         </div>
     </section>
     <nav th:replace="~{fragments/layout :: societyNav(${home.name}, ${home.slug}, 'home')}"></nav>
 
+    <section class="section player-panel" aria-labelledby="players-h">
+        <h2 id="players-h" class="sr-only">Players</h2>
+        <div class="grid grid-2">
+            <div class="card panel-new">
+                <h3>New player?</h3>
+                <p>Sign up for the next season. The admin team reviews every registration and you'll be added to the auction pool once approved.</p>
+                <p><a class="btn btn-gold" th:href="@{/society/{s}/register(s=${home.slug})}">Register as a player</a></p>
+            </div>
+            <div class="card panel-existing">
+                <h3>Already registered?</h3>
+                <th:block th:if="${nav != null and nav.societySlug == home.slug}">
+                    <p>Review your stats, team and details.</p>
+                    <p><a class="btn" th:href="@{/me/player}">View my player profile</a>
+                        <a class="btn btn-secondary" th:href="@{/profile}">Update my account</a></p>
+                </th:block>
+                <th:block th:unless="${nav != null and nav.societySlug == home.slug}">
+                    <p>Sign in to review and update your profile, or find yourself in the public player list.</p>
+                    <p><a class="btn" th:href="@{/login}">Sign in</a>
+                        <a class="btn btn-secondary" th:href="@{/society/{s}/players(s=${home.slug})}">Browse players</a></p>
+                </th:block>
+            </div>
+        </div>
+    </section>
+
     <section class="section" th:if="${home.season != null}">
-        <h2>Points table &ndash; <span th:text="${home.season.name}">Season</span></h2>
+        <h2 class="section-title">Points table &ndash; <span th:text="${home.season.name}">Season</span></h2>
         <p class="muted"><span th:text="${home.season.statusLabel}">Ongoing</span> &middot;
             <a th:href="@{/society/{s}/seasons/{id}(s=${home.slug},id=${home.season.id})}">Season details</a></p>
         <div th:replace="~{fragments/layout :: standings(${home.standings})}"></div>
@@ -27,17 +55,17 @@
     <p class="muted" th:if="${home.season == null}">No season has been set up yet.</p>
 
     <section class="section" th:unless="${#lists.isEmpty(home.upcoming)}">
-        <h2>Upcoming fixtures</h2>
+        <h2 class="section-title">Upcoming fixtures</h2>
         <div class="grid grid-2"><th:block th:each="m : ${home.upcoming}"><div th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></th:block></div>
     </section>
 
     <section class="section" th:unless="${#lists.isEmpty(home.recentResults)}">
-        <h2>Recent results</h2>
+        <h2 class="section-title">Recent results</h2>
         <div class="grid grid-2"><th:block th:each="m : ${home.recentResults}"><div th:replace="~{fragments/layout :: matchCard(${m}, true)}"></div></th:block></div>
     </section>
 
     <section class="section" th:unless="${#lists.isEmpty(home.teams)}">
-        <h2>Teams</h2>
+        <h2 class="section-title">Teams</h2>
         <div class="grid grid-4">
             <article class="card team-card" th:each="t : ${home.teams}">
                 <p><span class="dot" th:style="${t.color != null} ? 'background:' + ${t.color}"></span>
@@ -49,7 +77,7 @@
     </section>
 
     <section class="section" th:unless="${#lists.isEmpty(home.awards)}">
-        <h2>Awards</h2>
+        <h2 class="section-title">Awards</h2>
         <div class="grid grid-3">
             <article class="card" th:each="a : ${home.awards}">
                 <h3 th:text="${a.title}">Award</h3>
@@ -60,7 +88,7 @@
     </section>
 
     <section class="section" th:unless="${#lists.isEmpty(home.sponsors)}">
-        <h2>Sponsors</h2>
+        <h2 class="section-title">Sponsors</h2>
         <ul class="sponsor-strip plain">
             <li th:each="s : ${home.sponsors}">
                 <img class="logo" th:if="${s.logoUrl}" th:src="@{${s.logoUrl}}" th:alt="${s.name}" loading="lazy">
@@ -72,7 +100,7 @@
     </section>
 
     <section class="section" th:unless="${#lists.isEmpty(home.gallery)}">
-        <h2>Gallery</h2>
+        <h2 class="section-title">Gallery</h2>
         <div class="grid grid-4">
             <figure class="card" th:each="g : ${home.gallery}">
                 <img th:src="@{${g.imageUrl}}" th:alt="${g.title != null} ? ${g.title} : 'Society photo'" loading="lazy">
@@ -82,7 +110,7 @@
     </section>
 
     <section class="section" th:unless="${#lists.isEmpty(home.events)}">
-        <h2>Coming up</h2>
+        <h2 class="section-title">Coming up</h2>
         <ul class="plain">
             <li th:each="e : ${home.events}">
                 <strong th:text="${e.title}">Event</strong>

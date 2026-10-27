@@ -100,7 +100,7 @@ public class BackupCrypto {
     }
 
     private static byte[] crypt(boolean encrypt, byte[] key, byte[] iv, byte[] aad, byte[] in) {
-        GCMBlockCipher cipher = new GCMBlockCipher(AESEngine.newInstance());
+        GCMBlockCipher cipher = (GCMBlockCipher) GCMBlockCipher.newInstance(AESEngine.newInstance());
         cipher.init(encrypt, new AEADParameters(new KeyParameter(key), TAG_LEN * 8, iv, aad));
         byte[] out = new byte[cipher.getOutputSize(in.length)];
         try {

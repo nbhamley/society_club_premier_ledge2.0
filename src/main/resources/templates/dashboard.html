@@ -9,6 +9,9 @@
     <p class="muted"><span class="badge" th:text="${dash.societyStatus}">Active</span>
         <span th:if="${dash.seasonName}" th:text="'Current season: ' + ${dash.seasonName}">Season</span>
         <a th:href="@{/society/{s}(s=${dash.societySlug})}">Public page</a></p>
+    <div class="flash flash-err" role="alert" th:if="${dash.societyStatus == 'Draft'}">
+        This society is still a draft, so its public page (/society/[[${dash.societySlug}]]) is hidden and shows "not found".
+        A platform admin must activate it under Platform admin &rarr; Societies once it has at least 3 admins.</div>
 
     <div class="flash flash-err" role="alert" th:if="${dash.readOnly}">
         This society is read-only because its subscription needs attention. You can still view everything.

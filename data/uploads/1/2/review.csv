@@ -1,0 +1,5 @@
+﻿Kind,SourceFile,SourceRow,Include,name,title,vendor,season,email,phone,dateOfBirth,flatNumber,address,role,battingStyle,bowlingStyle,jerseyNumber,basePrice,shortName,color,teamA,teamB,date,venue,stage,category,description,player,team,contactPerson,whatsapp,city,website,rating,notes,amount,billDate,Confidence,Conflict
+VENDOR,vendor-list.csv,2,Y,Spice Route Caterers,,,,,98220 00040,,,,,,,,,,,,,,,,Food & Beverage,,,,Mrs. Iyer,98220 00040,Pune,,4,,,,90,
+VENDOR,vendor-list.csv,3,Y,ClickCraft Photography,,,,,98220 00041,,,,,,,,,,,,,,,,Cameraman,,,,Rahul,98220 00041,Pune,,5,,,,90,
+VENDOR,vendor-list.csv,4,Y,SafeSide Medical Services,,,,,98220 00042,,,,,,,,,,,,,,,,Medical Staff,,,,Dr. Naik,98220 00042,Pune,,4,,,,90,
+VENDOR,vendor-list.csv,5,N,Clubhouse Ground Booking,,,,,98220 00043,,,,,,,,,,,,,,,,Venue,,,,Mr. Pawar,98220 00043,Pune,,4,,,,70,vendor_exists

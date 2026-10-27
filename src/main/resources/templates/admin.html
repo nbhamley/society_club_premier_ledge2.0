@@ -10,6 +10,9 @@
     <p class="muted"><span class="badge" th:text="${console.societyStatus}">Active</span>
         <span th:text="${console.adminCount} + ' admins'">3 admins</span> &middot;
         <a th:href="@{/society/{s}(s=${console.societySlug})}">Public page</a></p>
+    <div class="flash flash-err" role="alert" th:if="${console.societyStatus == 'Draft'}">
+        This society is still a draft, so its public page (/society/[[${console.societySlug}]]) is hidden and shows "not found".
+        A platform admin must activate it under Platform admin &rarr; Societies once it has at least 3 admins.</div>
     <div class="flash flash-err" role="alert" th:if="${console.kpis.readOnly}">
         This society is read-only, so changes are blocked. <a th:href="@{/society-admin/billing}">Open billing</a> to fix it.</div>
     <div class="flash" th:if="${console.adminCount < 3}">

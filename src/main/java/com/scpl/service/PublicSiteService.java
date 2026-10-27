@@ -6,6 +6,7 @@ import com.scpl.dto.PublicViews;
 import com.scpl.dto.PublicViews.EventView;
 import com.scpl.dto.PublicViews.GalleryView;
 import com.scpl.dto.PublicViews.MatchView;
+import com.scpl.dto.PublicViews.SeasonCard;
 import com.scpl.dto.PublicViews.SeasonView;
 import com.scpl.dto.PublicViews.SocietyCard;
 import com.scpl.dto.PublicViews.SponsorView;
@@ -14,11 +15,11 @@ import com.scpl.dto.PublicViews.WinnerView;
 import com.scpl.dto.StandingRow;
 import com.scpl.exception.NotFoundException;
 import com.scpl.model.Award;
-import com.scpl.model.EventScope;
 import com.scpl.model.Match;
 import com.scpl.model.MatchStatus;
 import com.scpl.model.PlatformEvent;
 import com.scpl.model.Season;
+import com.scpl.model.SeasonStatus;
 import com.scpl.model.Society;
 import com.scpl.model.SocietyStatus;
 import com.scpl.model.Sponsor;
@@ -27,6 +28,7 @@ import com.scpl.model.User;
 import com.scpl.repo.AwardRepository;
 import com.scpl.repo.GalleryImageRepository;
 import com.scpl.repo.PlatformEventRepository;
+import com.scpl.repo.SeasonRepository;
 import com.scpl.repo.SponsorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Read models for every public page. Each method resolves the society through
@@ -47,6 +51,9 @@ public class PublicSiteService {
 
     private static final int RECENT_RESULTS = 5;
     private static final int UPCOMING_FIXTURES = 5;
+    private static final int UPCOMING_EVENTS = 6;
+    private static final int UPCOMING_SEASONS = 6;
+    private static final Set<SeasonStatus> OPEN_SEASONS = EnumSet.complementOf(EnumSet.of(SeasonStatus.COMPLETED));
 
     private final SocietyService societyService;
     private final SeasonService seasonService;
@@ -57,15 +64,20 @@ public class PublicSiteService {
     private final SponsorRepository sponsors;
     private final AwardRepository awards;
     private final GalleryImageRepository gallery;
+    private final SeasonRepository seasonRepository;
 
     // ------------------------------------------------------------------ platform home
 
     @Transactional(readOnly = true)
     public PublicViews.PlatformHomeView platformHome() {
         LocalDateTime now = LocalDateTime.now();
-        List<EventView> upcoming = events
-                .findTop6ByScopeAndPublishedTrueAndEventDateAfterOrderByEventDateAsc(EventScope.PLATFORM, now)
-                .stream().map(PublicSiteService::toView).toList();
+        // Platform-wide events plus those of ACTIVE societies; a society event links to its society's page.
+        List<EventView> upcoming = events.findTop12ByPublishedTrueAndEventDateAfterOrderByEventDateAsc(now).stream()
+                .filter(e -> e.getSociety() == null || e.getSociety().isActive())
+                .limit(UPCOMING_EVENTS).map(PublicSiteService::toView).toList();
+        List<SeasonCard> seasons = seasonRepository
+                .findBySociety_StatusAndStatusInOrderByStartDateAsc(SocietyStatus.ACTIVE, OPEN_SEASONS).stream()
+                .limit(UPCOMING_SEASONS).map(PublicSiteService::toCard).toList();
         // A society-scoped event only appears while its society is ACTIVE.
         List<EventView> thumbnails = events.findTop6ByPublishedTrueAndThumbnailUrlIsNotNullOrderByCreatedAtDesc().stream()
                 .filter(e -> e.getSociety() == null || e.getSociety().isActive())
@@ -76,7 +88,7 @@ public class PublicSiteService {
                 .stream().map(PublicSiteService::toWinner).toList();
         List<SocietyCard> societies = societyService.listAll().stream().filter(Society::isActive)
                 .map(s -> new SocietyCard(s.getName(), s.getSlug(), s.getCity(), s.getLogoUrl(), s.getDescription())).toList();
-        return new PublicViews.PlatformHomeView(upcoming, sponsorViews, winners, thumbnails, societies, PublicViews.plans());
+        return new PublicViews.PlatformHomeView(upcoming, seasons, sponsorViews, winners, thumbnails, societies, PublicViews.plans());
     }
 
     // ------------------------------------------------------------------ society pages
@@ -199,6 +211,12 @@ public class PublicSiteService {
     private static SeasonView toView(Season s) {
         return new SeasonView(s.getId(), s.getName(), s.getYear(), s.getStatus().getLabel(), s.getStartDate(),
                 s.getEndDate(), Boolean.TRUE.equals(s.getRegistrationOpen()), s.getOversPerMatch(), s.getDescription());
+    }
+
+    private static SeasonCard toCard(Season s) {
+        Society society = s.getSociety();
+        return new SeasonCard(s.getId(), s.getName(), s.getStatus().getLabel(), s.getStartDate(), s.getEndDate(),
+                Boolean.TRUE.equals(s.getRegistrationOpen()), society.getName(), society.getSlug(), society.getLogoUrl());
     }
 
     public static MatchView toView(Match m) {

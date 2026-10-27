@@ -53,8 +53,14 @@ public final class PublicViews {
     public record GalleryView(Long id, String title, String imageUrl, String caption) {
     }
 
-    public record PlatformHomeView(List<EventView> events, List<SponsorView> sponsors, List<WinnerView> winners,
-                                   List<EventView> thumbnails, List<SocietyCard> societies, List<PlanView> plans) {
+    /** A season on the platform home, linking to its society's season page. */
+    public record SeasonCard(Long id, String name, String statusLabel, LocalDate startDate, LocalDate endDate,
+                             boolean registrationOpen, String societyName, String societySlug, String societyLogoUrl) {
+    }
+
+    public record PlatformHomeView(List<EventView> events, List<SeasonCard> seasons, List<SponsorView> sponsors,
+                                   List<WinnerView> winners, List<EventView> thumbnails, List<SocietyCard> societies,
+                                   List<PlanView> plans) {
     }
 
     public record SocietyHomeView(Long id, String name, String slug, String description, String city,

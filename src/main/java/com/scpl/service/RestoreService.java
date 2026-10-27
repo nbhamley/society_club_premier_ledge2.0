@@ -169,6 +169,8 @@ public class RestoreService {
             return d;
         } catch (JsonProcessingException e) {
             throw new BusinessRuleException("The backup contents are not compatible with this version");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
